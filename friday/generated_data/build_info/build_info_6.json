@@ -1,0 +1,14 @@
+{
+  "build_id": "build-6",
+  "build_number": "6",
+  "timestamp": "2025-03-23T21:25:12.112973",
+  "branch": "feature/search-enhancements",
+  "commit_hash": "c0a908cc32",
+  "additional_info": {
+    "triggered_by": "user-893",
+    "environment": "staging",
+    "status": "success",
+    "duration_seconds": 401,
+    "test_pass_rate": 0.910190460854869
+  }
+}

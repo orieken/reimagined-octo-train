@@ -1,0 +1,24 @@
+# Development dependencies
+-r requirements.txt
+
+invoke
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
+httpx
+respx
+
+# Linting and formatting
+black
+flake8
+isort
+mypy
+
+# Type stubs
+types-requests
+
+# Documentation
+mkdocs
+mkdocs-material

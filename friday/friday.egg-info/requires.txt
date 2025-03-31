@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+httpx
+sentence-transformers
+numpy
+qdrant-client
+python-multipart
+pydantic-settings

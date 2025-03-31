@@ -1,0 +1,1792 @@
+{
+  "report_json": [
+    {
+      "description": "  As a user\n  I want to view product recommendations\n  So that I can use the application effectively",
+      "elements": [
+        {
+          "description": "",
+          "id": "user-authentication;verify-that-update-personal-information",
+          "keyword": "Scenario",
+          "line": 0,
+          "name": "Verify that update personal information",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 128212844
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 97,
+              "name": "I am on the account page",
+              "match": {
+                "location": "features/step_definitions/steps.ts:54"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 104037117
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 84,
+              "name": "I add the product to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:43"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 305156610
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 48,
+              "name": "I enter my username and password",
+              "match": {
+                "location": "features/step_definitions/steps.ts:198"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 387484586
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 47,
+              "name": "I update my profile information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:63"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 491304828
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 43,
+              "name": "I should see my account information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:81"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 643650645
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 152476806
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@critical",
+              "line": 0
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-authentication;system-allows-receive-email-notifications",
+          "keyword": "Scenario",
+          "line": 10,
+          "name": "System allows receive email notifications",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 151029322
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 89,
+              "name": "I am logged in as an admin",
+              "match": {
+                "location": "features/step_definitions/steps.ts:27"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 612071194
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 24,
+              "name": "I search for \"smartphone\"",
+              "match": {
+                "location": "features/step_definitions/steps.ts:25"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 357239337
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 33,
+              "name": "I should see the search results",
+              "match": {
+                "location": "features/step_definitions/steps.ts:78"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 868921551
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 75007724
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@low",
+              "line": 10
+            },
+            {
+              "name": "@ui",
+              "line": 11
+            },
+            {
+              "name": "@cart",
+              "line": 12
+            },
+            {
+              "name": "@api",
+              "line": 13
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-authentication;customer-successfully-add-items-to-wishlist",
+          "keyword": "Scenario",
+          "line": 20,
+          "name": "Customer successfully add items to wishlist",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 202242703
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 73,
+              "name": "I have items in my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:88"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 802736070
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 49,
+              "name": "I click on the product",
+              "match": {
+                "location": "features/step_definitions/steps.ts:11"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 482272902
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 96,
+              "name": "I click the login button",
+              "match": {
+                "location": "features/step_definitions/steps.ts:105"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 794332932
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 97,
+              "name": "the system should display an error message",
+              "match": {
+                "location": "features/step_definitions/steps.ts:49"
+              },
+              "result": {
+                "status": "failed",
+                "duration": 134454530,
+                "error_message": "Assertion failed: cart.items.length expected to be 1, but was 0"
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 125401129
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBGQUlMRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@regression",
+              "line": 20
+            },
+            {
+              "name": "@critical",
+              "line": 21
+            },
+            {
+              "name": "@sprint-23",
+              "line": 22
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-authentication;system-allows-leave-product-reviews",
+          "keyword": "Scenario",
+          "line": 30,
+          "name": "System allows leave product reviews",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 426685868
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 100,
+              "name": "I am logged in as an admin",
+              "match": {
+                "location": "features/step_definitions/steps.ts:198"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 212114713
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 20,
+              "name": "I update my profile information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:180"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 370516060
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 46,
+              "name": "I click the login button",
+              "match": {
+                "location": "features/step_definitions/steps.ts:32"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 719850838
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 28,
+              "name": "I enter my username and password",
+              "match": {
+                "location": "features/step_definitions/steps.ts:144"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 676139604
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 45,
+              "name": "the item should be added to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:188"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 543761296
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 198232117
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@checkout",
+              "line": 30
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-authentication;user-can-receive-email-notifications",
+          "keyword": "Scenario",
+          "line": 40,
+          "name": "User can receive email notifications",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 498912041
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 99,
+              "name": "I am logged in as an admin",
+              "match": {
+                "location": "features/step_definitions/steps.ts:53"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 622730582
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 64,
+              "name": "I enter my payment information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:135"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 737508121
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 27,
+              "name": "I update my profile information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:98"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 467300951
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 29,
+              "name": "I should see a confirmation message",
+              "match": {
+                "location": "features/step_definitions/steps.ts:73"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 442713649
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 197693750
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@low",
+              "line": 40
+            },
+            {
+              "name": "@high",
+              "line": 41
+            },
+            {
+              "name": "@sprint-22",
+              "line": 42
+            }
+          ],
+          "type": "scenario"
+        }
+      ],
+      "id": "user-authentication",
+      "line": 0,
+      "keyword": "Feature",
+      "name": "User Authentication",
+      "tags": [
+        {
+          "name": "@smoke",
+          "line": 1
+        },
+        {
+          "name": "@jira-456",
+          "line": 2
+        }
+      ],
+      "uri": "features/user-authentication.feature"
+    },
+    {
+      "description": "  As a user\n  I want to complete checkout\n  So that I can use the application effectively",
+      "elements": [
+        {
+          "description": "",
+          "id": "user-registration;verify-that-process-payment",
+          "keyword": "Scenario",
+          "line": 0,
+          "name": "Verify that process payment",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 375047456
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 64,
+              "name": "I am on the admin dashboard",
+              "match": {
+                "location": "features/step_definitions/steps.ts:27"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 224531501
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 16,
+              "name": "I enter my username and password",
+              "match": {
+                "location": "features/step_definitions/steps.ts:196"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 562207471
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 25,
+              "name": "I search for \"speakers\"",
+              "match": {
+                "location": "features/step_definitions/steps.ts:50"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 678820965
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 91,
+              "name": "I should see my updated information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:151"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 576455523
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 143297940
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@sprint-24",
+              "line": 0
+            },
+            {
+              "name": "@medium",
+              "line": 1
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-registration;user-can-update-personal-information",
+          "keyword": "Scenario",
+          "line": 10,
+          "name": "User can update personal information",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 235924962
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 72,
+              "name": "I have created an account",
+              "match": {
+                "location": "features/step_definitions/steps.ts:152"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 145883561
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 22,
+              "name": "I update my profile information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:66"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 730025308
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 28,
+              "name": "I click on the account menu",
+              "match": {
+                "location": "features/step_definitions/steps.ts:62"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 539964402
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 59,
+              "name": "I click on the product",
+              "match": {
+                "location": "features/step_definitions/steps.ts:43"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 951775661
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 80,
+              "name": "I should see the product in my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:152"
+              },
+              "result": {
+                "status": "failed",
+                "duration": 900961159,
+                "error_message": "Timed out waiting for element #confirmation-message to appear"
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 150414164
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBGQUlMRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@checkout",
+              "line": 10
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-registration;admin-can-view-product-recommendations",
+          "keyword": "Scenario",
+          "line": 20,
+          "name": "Admin can view product recommendations",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 143151272
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 92,
+              "name": "I am on the login page",
+              "match": {
+                "location": "features/step_definitions/steps.ts:196"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 346244941
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 59,
+              "name": "I add the product to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:141"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 608427460
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 16,
+              "name": "I add the product to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:11"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 273885475
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 70,
+              "name": "the system should display an error message",
+              "match": {
+                "location": "features/step_definitions/steps.ts:143"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 644888580
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 149509636
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@api",
+              "line": 20
+            },
+            {
+              "name": "@ui",
+              "line": 21
+            },
+            {
+              "name": "@sprint-24",
+              "line": 22
+            },
+            {
+              "name": "@regression",
+              "line": 23
+            }
+          ],
+          "type": "scenario"
+        }
+      ],
+      "id": "user-registration",
+      "line": 50,
+      "keyword": "Feature",
+      "name": "User Registration",
+      "tags": [
+        {
+          "name": "@jira-123",
+          "line": 1
+        },
+        {
+          "name": "@critical",
+          "line": 2
+        }
+      ],
+      "uri": "features/user-registration.feature"
+    },
+    {
+      "description": "  As a user\n  I want to leave product reviews\n  So that I can use the application effectively",
+      "elements": [
+        {
+          "description": "",
+          "id": "product-reviews;system-allows-manage-inventory",
+          "keyword": "Scenario",
+          "line": 0,
+          "name": "System allows manage inventory",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 441174825
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 45,
+              "name": "I am on the product page",
+              "match": {
+                "location": "features/step_definitions/steps.ts:131"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 249523380
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 90,
+              "name": "I enter my username and password",
+              "match": {
+                "location": "features/step_definitions/steps.ts:38"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 360659361
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 68,
+              "name": "I update my profile information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:141"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 477374988
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 29,
+              "name": "the order should be placed successfully",
+              "match": {
+                "location": "features/step_definitions/steps.ts:36"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 217079889
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 138286064
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@payment",
+              "line": 0
+            },
+            {
+              "name": "@account",
+              "line": 1
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "product-reviews;user-can-process-payment",
+          "keyword": "Scenario",
+          "line": 10,
+          "name": "User can process payment",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 417976388
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 36,
+              "name": "I am on the product page",
+              "match": {
+                "location": "features/step_definitions/steps.ts:186"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 697163047
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 12,
+              "name": "I search for \"laptop\"",
+              "match": {
+                "location": "features/step_definitions/steps.ts:89"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 507143680
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 90,
+              "name": "I confirm my order",
+              "match": {
+                "location": "features/step_definitions/steps.ts:87"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 223503093
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 63,
+              "name": "I should receive a confirmation email",
+              "match": {
+                "location": "features/step_definitions/steps.ts:154"
+              },
+              "result": {
+                "status": "failed",
+                "duration": 860076628,
+                "error_message": "Expected \"true\" but got \"false\""
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 76817588
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBGQUlMRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@cart",
+              "line": 10
+            }
+          ],
+          "type": "scenario"
+        }
+      ],
+      "id": "product-reviews",
+      "line": 100,
+      "keyword": "Feature",
+      "name": "Product Reviews",
+      "tags": [
+        {
+          "name": "@checkout",
+          "line": 1
+        },
+        {
+          "name": "@high",
+          "line": 2
+        }
+      ],
+      "uri": "features/product-reviews.feature"
+    },
+    {
+      "description": "  As a user\n  I want to access admin dashboard\n  So that I can use the application effectively",
+      "elements": [
+        {
+          "description": "",
+          "id": "email-notifications;update-personal-information-works-correctly",
+          "keyword": "Scenario",
+          "line": 0,
+          "name": "update personal information works correctly",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 240552864
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 87,
+              "name": "I am on the login page",
+              "match": {
+                "location": "features/step_definitions/steps.ts:93"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 764560865
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 20,
+              "name": "I confirm my order",
+              "match": {
+                "location": "features/step_definitions/steps.ts:180"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 621424435
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 13,
+              "name": "I confirm my order",
+              "match": {
+                "location": "features/step_definitions/steps.ts:82"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 207375954
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 28,
+              "name": "I confirm my order",
+              "match": {
+                "location": "features/step_definitions/steps.ts:49"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 130803949
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 23,
+              "name": "I should see the product in my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:136"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 247923944
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 152143789
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@ui",
+              "line": 0
+            },
+            {
+              "name": "@admin",
+              "line": 1
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "email-notifications;access-admin-dashboard-works-correctly",
+          "keyword": "Scenario",
+          "line": 10,
+          "name": "access admin dashboard works correctly",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 383304931
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 24,
+              "name": "I am logged in as a user",
+              "match": {
+                "location": "features/step_definitions/steps.ts:54"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 386900529
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 23,
+              "name": "I confirm my order",
+              "match": {
+                "location": "features/step_definitions/steps.ts:185"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 158030648
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 55,
+              "name": "I click the login button",
+              "match": {
+                "location": "features/step_definitions/steps.ts:54"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 522519344
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 53,
+              "name": "the item should be added to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:13"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 357256557
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 162727841
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@regression",
+              "line": 10
+            },
+            {
+              "name": "@critical",
+              "line": 11
+            },
+            {
+              "name": "@login",
+              "line": 12
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "email-notifications;customer-successfully-complete-checkout",
+          "keyword": "Scenario",
+          "line": 20,
+          "name": "Customer successfully complete checkout",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 441097219
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 60,
+              "name": "I am on the shopping cart page",
+              "match": {
+                "location": "features/step_definitions/steps.ts:121"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 423848377
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 16,
+              "name": "I add the product to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:37"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 351693621
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 20,
+              "name": "I should be redirected to the dashboard",
+              "match": {
+                "location": "features/step_definitions/steps.ts:95"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 699675983
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 195560546
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@sprint-24",
+              "line": 20
+            },
+            {
+              "name": "@ui",
+              "line": 21
+            }
+          ],
+          "type": "scenario"
+        }
+      ],
+      "id": "email-notifications",
+      "line": 150,
+      "keyword": "Feature",
+      "name": "Email Notifications",
+      "tags": [
+        {
+          "name": "@smoke",
+          "line": 1
+        }
+      ],
+      "uri": "features/email-notifications.feature"
+    },
+    {
+      "description": "  As a user\n  I want to access admin dashboard\n  So that I can use the application effectively",
+      "elements": [
+        {
+          "description": "",
+          "id": "user-registration;view-product-recommendations-works-correctly",
+          "keyword": "Scenario",
+          "line": 0,
+          "name": "view product recommendations works correctly",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 317860003
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 53,
+              "name": "I am on the shopping cart page",
+              "match": {
+                "location": "features/step_definitions/steps.ts:156"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 773205851
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 90,
+              "name": "I enter my payment information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:170"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 738272986
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 62,
+              "name": "I click on the product",
+              "match": {
+                "location": "features/step_definitions/steps.ts:37"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 218561135
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 84,
+              "name": "I click the checkout button",
+              "match": {
+                "location": "features/step_definitions/steps.ts:161"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 796699991
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 38,
+              "name": "the order should be placed successfully",
+              "match": {
+                "location": "features/step_definitions/steps.ts:55"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 929390020
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 178092719
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@medium",
+              "line": 0
+            },
+            {
+              "name": "@jira-789",
+              "line": 1
+            },
+            {
+              "name": "@sprint-23",
+              "line": 2
+            },
+            {
+              "name": "@ui",
+              "line": 3
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-registration;test-that-search-for-products-by-keyword",
+          "keyword": "Scenario",
+          "line": 10,
+          "name": "Test that search for products by keyword",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 330696537
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 32,
+              "name": "I am on the product page",
+              "match": {
+                "location": "features/step_definitions/steps.ts:24"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 121834682
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 27,
+              "name": "I add the product to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:197"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 810824496
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 74,
+              "name": "I add the product to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:184"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 806160908
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 64,
+              "name": "the system should display an error message",
+              "match": {
+                "location": "features/step_definitions/steps.ts:23"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 108435748
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 109402152
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@sprint-22",
+              "line": 10
+            },
+            {
+              "name": "@checkout",
+              "line": 11
+            },
+            {
+              "name": "@account",
+              "line": 12
+            },
+            {
+              "name": "@sprint-24",
+              "line": 13
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-registration;customer-successfully-view-product-recommendations",
+          "keyword": "Scenario",
+          "line": 20,
+          "name": "Customer successfully view product recommendations",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 308104588
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 86,
+              "name": "I have items in my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:181"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 457916402
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 14,
+              "name": "I enter my payment information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:90"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 466049897
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 19,
+              "name": "I add the product to my cart",
+              "match": {
+                "location": "features/step_definitions/steps.ts:193"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 511486106
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 76,
+              "name": "I click the login button",
+              "match": {
+                "location": "features/step_definitions/steps.ts:62"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 140552047
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 88,
+              "name": "I should see my updated information",
+              "match": {
+                "location": "features/step_definitions/steps.ts:78"
+              },
+              "result": {
+                "status": "failed",
+                "duration": 771380843,
+                "error_message": "Expected page title to be \"Dashboard\" but was \"Login\""
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 146825702
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBGQUlMRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@high",
+              "line": 20
+            },
+            {
+              "name": "@sprint-22",
+              "line": 21
+            },
+            {
+              "name": "@payment",
+              "line": 22
+            },
+            {
+              "name": "@jira-123",
+              "line": 23
+            }
+          ],
+          "type": "scenario"
+        },
+        {
+          "description": "",
+          "id": "user-registration;customer-successfully-add-items-to-wishlist",
+          "keyword": "Scenario",
+          "line": 30,
+          "name": "Customer successfully add items to wishlist",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 159055256
+              }
+            },
+            {
+              "keyword": "Given ",
+              "line": 40,
+              "name": "I am logged in as a user",
+              "match": {
+                "location": "features/step_definitions/steps.ts:86"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 414157137
+              }
+            },
+            {
+              "keyword": "When ",
+              "line": 30,
+              "name": "I click on the product",
+              "match": {
+                "location": "features/step_definitions/steps.ts:183"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 293158164
+              }
+            },
+            {
+              "keyword": "And ",
+              "line": 23,
+              "name": "I search for \"tablet\"",
+              "match": {
+                "location": "features/step_definitions/steps.ts:179"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 280797806
+              }
+            },
+            {
+              "keyword": "Then ",
+              "line": 15,
+              "name": "I should be redirected to the dashboard",
+              "match": {
+                "location": "features/step_definitions/steps.ts:127"
+              },
+              "result": {
+                "status": "passed",
+                "duration": 239238952
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 116908289
+              },
+              "embeddings": [
+                {
+                  "data": "U3RhdHVzOiBQQVNTRUQuIER1cmF0aW9uOjBz",
+                  "mime_type": "text/plain"
+                },
+                {
+                  "data": "c2NyZWVuc2hvdC1lbWJlZGRhYmxl",
+                  "mime_type": "image/png"
+                }
+              ]
+            }
+          ],
+          "tags": [
+            {
+              "name": "@cart",
+              "line": 30
+            },
+            {
+              "name": "@sprint-23",
+              "line": 31
+            },
+            {
+              "name": "@medium",
+              "line": 32
+            },
+            {
+              "name": "@admin",
+              "line": 33
+            }
+          ],
+          "type": "scenario"
+        }
+      ],
+      "id": "user-registration",
+      "line": 200,
+      "keyword": "Feature",
+      "name": "User Registration",
+      "tags": [
+        {
+          "name": "@cart",
+          "line": 1
+        }
+      ],
+      "uri": "features/user-registration.feature"
+    }
+  ],
+  "build_id": "build-2",
+  "timestamp": "2025-03-19T21:25:12.112973"
+}
