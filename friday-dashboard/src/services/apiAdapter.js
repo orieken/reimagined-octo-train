@@ -4,8 +4,7 @@
  * Adapts the API response to the format expected by the dashboard components
  */
 export const adaptTestStats = (apiResponse) => {
-  // Handle empty or invalid responses
-  if (!apiResponse || !apiResponse.statistics) {
+  if (!apiResponse) {
     return {
       passRate: 0,
       totalTests: 0,
@@ -17,11 +16,11 @@ export const adaptTestStats = (apiResponse) => {
     };
   }
 
-  const stats = apiResponse.statistics;
+  const stats = apiResponse;
 
   // Transform the API response to the expected format
   return {
-    passRate: stats.pass_rate ? Math.round(stats.pass_rate * 100 * 10) / 10 : 0, // Convert to percentage with 1 decimal
+    passRate: stats.pass_rate || 0,
     totalTests: stats.total_scenarios || 0,
     passedTests: stats.passed_scenarios || 0,
     failedTests: stats.failed_scenarios || 0,
@@ -34,13 +33,14 @@ export const adaptTestStats = (apiResponse) => {
   };
 };
 
+
 /**
  * Adapts the API health response
  */
 export const adaptHealthCheck = (apiResponse) => {
   return {
-    isConnected: apiResponse?.status === "success",
-    error: apiResponse?.status !== "success" ? "API is not responding correctly" : null
+    isConnected: apiResponse?.status === "ok",
+    error: apiResponse?.status !== "ok" ? "API is not responding correctly" : null
   };
 };
 
@@ -207,13 +207,269 @@ export const adaptFailureAnalysis = (apiResponse) => {
 };
 
 /**
+ * Adapts the API builds response
+ */
+export const adaptBuilds = (apiResponse) => {
+  // Handle empty or invalid responses
+  if (!apiResponse || !apiResponse.builds) {
+    return [];
+  }
+
+  return apiResponse.builds.map(build => ({
+    id: build.id || '',
+    buildNumber: build.build_number || build.number || 'Unknown',
+    date: build.date || build.timestamp || null,
+    passRate: build.pass_rate ? Math.round(build.pass_rate * 100 * 10) / 10 : 0,
+    totalScenarios: build.total_scenarios || 0,
+    passedScenarios: build.passed_scenarios || 0,
+    failedScenarios: build.failed_scenarios || 0
+  }));
+};
+
+/**
+ * Adapts the API build details response
+ */
+export const adaptBuildDetails = (apiResponse) => {
+  // Handle empty or invalid responses
+  if (!apiResponse || !apiResponse.build) {
+    return {
+      id: '',
+      buildNumber: 'Unknown',
+      date: null,
+      passRate: 0,
+      totalScenarios: 0,
+      passedScenarios: 0,
+      failedScenarios: 0,
+      skippedScenarios: 0,
+      features: [],
+      scenarios: []
+    };
+  }
+
+  const build = apiResponse.build;
+
+  return {
+    id: build.id || '',
+    buildNumber: build.build_number || build.number || 'Unknown',
+    date: build.date || build.timestamp || null,
+    passRate: build.pass_rate ? Math.round(build.pass_rate * 100 * 10) / 10 : 0,
+    totalScenarios: build.total_scenarios || 0,
+    passedScenarios: build.passed_scenarios || 0,
+    failedScenarios: build.failed_scenarios || 0,
+    skippedScenarios: build.skipped_scenarios || 0,
+    features: (build.features || []).map(feature => ({
+      id: feature.id || '',
+      name: feature.name || 'Unknown',
+      passRate: feature.pass_rate ? Math.round(feature.pass_rate * 100 * 10) / 10 : 0,
+      totalScenarios: feature.total_scenarios || 0,
+      passedScenarios: feature.passed_scenarios || 0,
+      failedScenarios: feature.failed_scenarios || 0,
+      skippedScenarios: feature.skipped_scenarios || 0
+    })),
+    scenarios: (build.scenarios || []).map(scenario => ({
+      id: scenario.id || '',
+      name: scenario.name || 'Unknown',
+      feature: scenario.feature || 'Unknown',
+      status: scenario.status || 'unknown',
+      tags: scenario.tags || []
+    }))
+  };
+};
+
+/**
+ * Adapts the API scenarios response
+ */
+export const adaptScenarios = (apiResponse) => {
+  // Handle empty or invalid responses
+  if (!apiResponse || !apiResponse.scenarios) {
+    return [];
+  }
+
+  return apiResponse.scenarios.map(scenario => ({
+    id: scenario.id || '',
+    name: scenario.name || 'Unknown',
+    feature: scenario.feature || 'Unknown',
+    status: scenario.status || 'unknown',
+    tags: scenario.tags || []
+  }));
+};
+
+/**
+ * Adapts the API scenario details response
+ */
+export const adaptScenarioDetails = (apiResponse) => {
+  // Handle empty or invalid responses
+  if (!apiResponse || !apiResponse.scenario) {
+    return {
+      id: '',
+      name: 'Unknown',
+      feature: 'Unknown',
+      status: 'unknown',
+      tags: [],
+      steps: [],
+      builds: []
+    };
+  }
+
+  const scenario = apiResponse.scenario;
+
+  return {
+    id: scenario.id || '',
+    name: scenario.name || 'Unknown',
+    feature: scenario.feature || 'Unknown',
+    status: scenario.status || 'unknown',
+    tags: scenario.tags || [],
+    steps: (scenario.steps || []).map(step => ({
+      id: step.id || '',
+      keyword: step.keyword || '',
+      name: step.name || '',
+      status: step.status || 'unknown',
+      error: step.error || null
+    })),
+    builds: (scenario.builds || []).map(build => ({
+      id: build.id || '',
+      buildNumber: build.build_number || build.number || 'Unknown',
+      date: build.date || build.timestamp || null,
+      status: build.status || 'unknown'
+    }))
+  };
+};
+
+/**
+ * Adapts the API features response
+ */
+export const adaptFeatures = (apiResponse) => {
+  // Handle empty or invalid responses
+  if (!apiResponse || !apiResponse.features) {
+    return [];
+  }
+
+  return apiResponse.features.map(feature => ({
+    id: feature.id || '',
+    name: feature.name || 'Unknown',
+    passRate: feature.pass_rate ? Math.round(feature.pass_rate * 100 * 10) / 10 : 0,
+    totalScenarios: feature.total_scenarios || 0,
+    passedScenarios: feature.passed_scenarios || 0,
+    failedScenarios: feature.failed_scenarios || 0,
+    skippedScenarios: feature.skipped_scenarios || 0
+  }));
+};
+
+/**
+ * Adapts the API feature details response
+ */
+export const adaptFeatureDetails = (apiResponse) => {
+  // Handle empty or invalid responses
+  if (!apiResponse || !apiResponse.feature) {
+    return {
+      id: '',
+      name: 'Unknown',
+      passRate: 0,
+      totalScenarios: 0,
+      passedScenarios: 0,
+      failedScenarios: 0,
+      skippedScenarios: 0,
+      scenarios: [],
+      builds: []
+    };
+  }
+
+  const feature = apiResponse.feature;
+
+  return {
+    id: feature.id || '',
+    name: feature.name || 'Unknown',
+    passRate: feature.pass_rate ? Math.round(feature.pass_rate * 100 * 10) / 10 : 0,
+    totalScenarios: feature.total_scenarios || 0,
+    passedScenarios: feature.passed_scenarios || 0,
+    failedScenarios: feature.failed_scenarios || 0,
+    skippedScenarios: feature.skipped_scenarios || 0,
+    scenarios: (feature.scenarios || []).map(scenario => ({
+      id: scenario.id || '',
+      name: scenario.name || 'Unknown',
+      status: scenario.status || 'unknown',
+      tags: scenario.tags || []
+    })),
+    builds: (feature.builds || []).map(build => ({
+      id: build.id || '',
+      buildNumber: build.build_number || build.number || 'Unknown',
+      date: build.date || build.timestamp || null,
+      passRate: build.pass_rate ? Math.round(build.pass_rate * 100 * 10) / 10 : 0
+    }))
+  };
+};
+
+/**
+ * Adapts the API tags response
+ */
+export const adaptTags = (apiResponse) => {
+  // Handle empty or invalid responses
+  if (!apiResponse || !apiResponse.tags) {
+    return [];
+  }
+
+  return apiResponse.tags.map(tag => ({
+    name: tag.name || 'Unknown',
+    count: tag.count || 0,
+    passRate: tag.pass_rate ? Math.round(tag.pass_rate * 100 * 10) / 10 : 0
+  }));
+};
+
+/**
+ * Adapts the API tag details response
+ */
+export const adaptTagDetails = (apiResponse) => {
+  // Handle empty or invalid responses
+  if (!apiResponse || !apiResponse.tag) {
+    return {
+      name: 'Unknown',
+      count: 0,
+      passRate: 0,
+      scenarios: [],
+      features: []
+    };
+  }
+
+  const tag = apiResponse.tag;
+
+  return {
+    name: tag.name || 'Unknown',
+    count: tag.count || 0,
+    passRate: tag.pass_rate ? Math.round(tag.pass_rate * 100 * 10) / 10 : 0,
+    scenarios: (tag.scenarios || []).map(scenario => ({
+      id: scenario.id || '',
+      name: scenario.name || 'Unknown',
+      feature: scenario.feature || 'Unknown',
+      status: scenario.status || 'unknown'
+    })),
+    features: (tag.features || []).map(feature => ({
+      id: feature.id || '',
+      name: feature.name || 'Unknown',
+      passRate: feature.pass_rate ? Math.round(feature.pass_rate * 100 * 10) / 10 : 0,
+      count: feature.count || 0
+    }))
+  };
+};
+
+/**
  * Adapts the API query response
  */
 export const adaptQueryResults = (apiResponse) => {
-  // Implement when you have the actual API response format for queries
+  // Handle empty or invalid responses
+  if (!apiResponse) {
+    return {
+      answer: "No answer available",
+      sources: [],
+      relatedQueries: []
+    };
+  }
+
   return {
-    answer: apiResponse?.result || "No answer available",
-    sources: [],
-    relatedQueries: []
+    answer: apiResponse.answer || apiResponse.result || "No answer available",
+    sources: (apiResponse.sources || []).map(source => ({
+      title: source.title || source.name || 'Unknown',
+      confidence: source.confidence || 0.5
+    })),
+    relatedQueries: apiResponse.related_queries || apiResponse.suggestions || []
   };
 };

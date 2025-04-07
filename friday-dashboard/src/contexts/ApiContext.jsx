@@ -20,7 +20,7 @@ export function ApiProvider({ children }) {
           isLoading: false,
           error: healthStatus.error,
         });
-      } catch (_error) {
+      } catch (error) {
         setApiStatus({
           isConnected: false,
           isLoading: false,

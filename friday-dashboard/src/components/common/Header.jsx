@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../contexts/ApiContext';
+import NotificationCenter from './NotificationCenter.jsx';
 
 const Header = ({ toggleSidebar }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -36,14 +37,26 @@ const Header = ({ toggleSidebar }) => {
           </div>
 
           <div className="flex items-center">
+            {/* Mock Data Indicator */}
+            {apiStatus.usingMockData && (
+              <div className="mr-4 px-2 py-1 bg-warning-light text-warning-dark text-xs rounded-md">
+                Using Demo Data
+              </div>
+            )}
+
             {/* API Status Indicator */}
             <div className="mr-4 flex items-center">
-              <div className={`h-3 w-3 rounded-full mr-2 ${apiStatus.isConnected ? 'bg-success' : 'bg-danger'}`}></div>
-              <span className="text-sm">{apiStatus.isConnected ? 'API Connected' : 'API Disconnected'}</span>
+              <div className={`h-3 w-3 rounded-full mr-2 ${apiStatus.isConnected ? 'bg-success' : 'bg-warning'}`}></div>
+              <span className="text-sm">{apiStatus.isConnected ? 'API Connected' : 'API Simulated'}</span>
+            </div>
+
+            {/* Notification Center */}
+            <div className="mx-4">
+              <NotificationCenter />
             </div>
 
             {/* User Profile Dropdown */}
-            <div className="ml-3 relative">
+            <div className="relative">
               <div>
                 <button
                   type="button"

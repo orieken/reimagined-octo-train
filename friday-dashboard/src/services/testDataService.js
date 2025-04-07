@@ -13,7 +13,7 @@ export const getTestStats = async (filter = {}) => {
   });
 
   const query = params.toString() ? `?${params.toString()}` : '';
-  const response = await apiClient.get(`/stats${query}`);
+  const response = await apiClient.get(`/stats/summary${query}`);
   return response.data;
 };
 
@@ -61,7 +61,7 @@ export const getFailureAnalysis = async (filter = {}) => {
   });
 
   const query = params.toString() ? `?${params.toString()}` : '';
-  const response = await apiClient.get(`/failures${query}`);
+  const response = await apiClient.get(`/failures/recent${query}`);
   return response.data;
 };
 
