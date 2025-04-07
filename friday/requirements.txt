@@ -1,5 +1,5 @@
 fastapi
-uvicorn
+uvicorn[standard]
 pydantic
 httpx
 sentence-transformers
@@ -7,6 +7,14 @@ numpy
 qdrant-client
 python-multipart
 tenacity
-
+rich
+pandas
+matplotlib
 
 pydantic-settings
+sqlalchemy
+alembic
+psycopg2-binary
+
+websocket
+tabulate

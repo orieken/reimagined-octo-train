@@ -1,238 +1,469 @@
-"""
-API request and response models
-"""
-from datetime import datetime
-from typing import Dict, List, Optional, Union
-
+# app/models/api.py
+from typing import List, Dict, Any, Optional, Union
 from pydantic import BaseModel, Field
-
-from app.models.domain import BuildInfo, Feature, QueryResult, TestStatus
+from datetime import datetime
+from enum import Enum
 
 
 class ErrorResponse(BaseModel):
-    """API error response"""
+    """Standard error response."""
     detail: str
-    status_code: int
-    path: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    status_code: int = 500
 
 
-# Processor API models
-class CucumberReportRequest(BaseModel):
-    """Request model for processing Cucumber reports"""
-    build_id: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
-    metadata: Dict[str, str] = Field(default_factory=dict)
+class SuccessResponse(BaseModel):
+    """Standard success response."""
+    status: str = "success"
+    message: str
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 
-class CucumberReportResponse(BaseModel):
-    """Response model for processed Cucumber reports"""
-    test_run_id: str
-    processed_features: int
-    processed_scenarios: int
-    success: bool = True
-    message: str = "Successfully processed cucumber reports"
+class ReportResponse(BaseModel):
+    """Response for report upload endpoint."""
+    status: str
+    message: str
+    report_id: str
+    timestamp: str
 
 
-class BuildInfoRequest(BaseModel):
-    """Request model for processing build information"""
-    build_id: str
-    build_number: str
-    branch: str
-    commit_hash: str
-    build_date: datetime
-    build_url: Optional[str] = None
-    metadata: Dict[str, str] = Field(default_factory=dict)
+class SearchResultItem(BaseModel):
+    """Single item in search results."""
+    id: str
+    score: float
+    content: Dict[str, Any]
 
 
-class BuildInfoResponse(BaseModel):
-    """Response model for processed build information"""
-    build_id: str
-    success: bool = True
-    message: str = "Successfully processed build information"
-
-
-# Query API models
-class QueryRequest(BaseModel):
-    """Request model for natural language queries"""
+class SearchResponse(BaseModel):
+    """Response for search endpoint."""
     query: str
-    test_run_id: Optional[str] = None
-    build_id: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
-    max_results: Optional[int] = None
-    similarity_threshold: Optional[float] = None
+    results: List[SearchResultItem] = Field(default_factory=list)
+    total_hits: int = 0
+    execution_time_ms: float = 0
 
 
-class QueryResponse(BaseModel):
-    """Response model for natural language queries"""
-    result: QueryResult
+class AnalysisResponse(BaseModel):
+    """Response for analysis endpoint."""
+    query: str
+    timestamp: str
+    recommendations: List[str] = Field(default_factory=list)
+    related_items: List[Dict[str, Any]] = Field(default_factory=list)
+    summary: str
 
 
-# Stats API models
-class TestTag(BaseModel):
-    """Test tag with count"""
+class ReportSummaryResponse(BaseModel):
+    """Response for report summary endpoint."""
+    report_id: str
+    summary: str
+    timestamp: str
+
+
+class TestCaseInsightsResponse(BaseModel):
+    """Response for test case insights endpoint."""
+    test_case_id: str
+    test_case: Optional[Dict[str, Any]] = None
+    analysis: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    recommendations: List[str] = Field(default_factory=list)
+    timestamp: str
+
+
+class BuildTrendAnalysisResponse(BaseModel):
+    """Response for build trend analysis endpoint."""
+    build_numbers: List[str]
+    builds_analyzed: int
+    trend_analysis: str
+    timestamp: str
+
+
+class AnswerResponse(BaseModel):
+    """Response for answer generation endpoint."""
+    query: str
+    answer: str
+    timestamp: str
+
+
+class ProcessingStatusResponse(BaseModel):
+    """Response for checking processing status."""
+    task_id: str
+    status: str  # "pending", "completed", "failed"
+    progress: float = 0.0  # 0.0 to 1.0
+    message: Optional[str] = None
+    timestamp: str
+
+
+class HealthCheckResponse(BaseModel):
+    """Response for health check endpoint."""
+    status: str  # "ok", "degraded", "unavailable"
+    services: Dict[str, str]
+    timestamp: str
+
+
+# Missing models required by test_results.py
+class TestResultsTag(BaseModel):
+    """Tag for a test result."""
     name: str
-    count: int
+    value: Optional[str] = None
+    color: Optional[str] = None
 
 
-class TestSummary(BaseModel):
-    """Test summary statistics"""
-    total: int
-    passed: int
-    failed: int
-    skipped: int = 0
-    pending: int = 0
-    undefined: int = 0
-    success_rate: float
-
-    @classmethod
-    def from_features(cls, features: List[Feature]) -> "TestSummary":
-        """Create summary from features"""
-        total = 0
-        passed = 0
-        failed = 0
-        skipped = 0
-        pending = 0
-        undefined = 0
-
-        for feature in features:
-            for scenario in feature.scenarios:
-                total += 1
-
-                if scenario.status == TestStatus.PASSED:
-                    passed += 1
-                elif scenario.status == TestStatus.FAILED:
-                    failed += 1
-                elif scenario.status == TestStatus.SKIPPED:
-                    skipped += 1
-                elif scenario.status == TestStatus.PENDING:
-                    pending += 1
-                elif scenario.status == TestStatus.UNDEFINED:
-                    undefined += 1
-
-        success_rate = (passed / total) * 100 if total > 0 else 0
-
-        return cls(
-            total=total,
-            passed=passed,
-            failed=failed,
-            skipped=skipped,
-            pending=pending,
-            undefined=undefined,
-            success_rate=success_rate,
-        )
+class StepResult(BaseModel):
+    """Model representing a test step result."""
+    id: str
+    name: str
+    keyword: str
+    status: str
+    duration: Optional[float] = None
+    error_message: Optional[str] = None
+    screenshot: Optional[str] = None
+    logs: Optional[List[str]] = None
 
 
-class TestStatsRequest(BaseModel):
-    """Request model for test statistics"""
-    test_run_id: Optional[str] = None
-    build_id: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
-    from_date: Optional[datetime] = None
-    to_date: Optional[datetime] = None
-
-
-class TestStatsResponse(BaseModel):
-    """Response model for test statistics"""
-    summary: TestSummary
-    test_run_id: Optional[str] = None
-    build_info: Optional[BuildInfo] = None
-    timestamp: datetime
-    tags: List[TestTag] = Field(default_factory=list)
+class ScenarioResult(BaseModel):
+    """Model representing a scenario result."""
+    id: str
+    name: str
+    status: str
+    duration: Optional[float] = None
+    feature: str
+    steps: List[StepResult] = Field(default_factory=list)
+    error_message: Optional[str] = None
+    tags: List[TestResultsTag] = Field(default_factory=list)
 
 
 class FeatureResult(BaseModel):
-    """Feature result summary"""
+    """Model representing a feature result."""
+    id: str
     name: str
-    total: int
-    passed: int
-    failed: int
-    skipped: int = 0
-    pass_rate: float
-
-
-class TestResultsTag(BaseModel):
-    """Tag with test counts and pass rate"""
-    name: str
-    count: int
-    pass_rate: float
+    description: Optional[str] = None
+    scenarios: List[ScenarioResult] = Field(default_factory=list)
+    tags: List[TestResultsTag] = Field(default_factory=list)
+    status: str
+    duration: Optional[float] = None
+    pass_rate: Optional[float] = None
 
 
 class TestResultsResponse(BaseModel):
-    """Response model for detailed test results"""
-    total_tests: int
-    passed_tests: int
-    failed_tests: int
-    skipped_tests: int
-    pass_rate: float
-    feature_results: List[FeatureResult] = Field(default_factory=list)
-    tags: List[TestResultsTag] = Field(default_factory=list)
-    last_updated: datetime
-
-
-class DailyTrend(BaseModel):
-    """Daily test trend data"""
-    date: str
-    total_tests: int
-    passed_tests: int
-    failed_tests: int
-    pass_rate: float
-
-
-class BuildComparison(BaseModel):
-    """Build comparison data"""
-    build_number: str
-    pass_rate: float
-
-
-class FailingTest(BaseModel):
-    """Top failing test information"""
-    name: str
-    failure_rate: float
-    occurrences: int
-
-
-class TrendsResponse(BaseModel):
-    """Response model for test trends"""
-    daily_trends: List[DailyTrend] = Field(default_factory=list)
-    build_comparison: List[BuildComparison] = Field(default_factory=list)
-    top_failing_tests: List[FailingTest] = Field(default_factory=list)
-
-
-class FailureCategory(BaseModel):
-    """Failure category with count and percentage"""
-    name: str
-    value: int
-    percentage: float
-
-
-class FailureDetailItem(BaseModel):
-    """Detail item for a specific failure"""
-    element: str
-    occurrences: int
-    scenarios: List[str] = Field(default_factory=list)
-
-
-class FeatureFailure(BaseModel):
-    """Feature with failure data"""
-    feature: str
-    failures: int
-    tests: int
-    failure_rate: float
-
-
-class RecentFailure(BaseModel):
-    """Information about a recent test failure"""
+    """Response for test results endpoint."""
     id: str
-    scenario: str
-    error: str
-    date: str
-    build: str
+    name: str
+    status: str
+    timestamp: str
+    duration: float
+    environment: str
+    features: List[FeatureResult] = Field(default_factory=list)
+    tags: List[TestResultsTag] = Field(default_factory=list)
+    statistics: Dict[str, Any] = Field(default_factory=dict)
 
 
-class FailureAnalysisResponse(BaseModel):
-    """Response model for failure analysis"""
-    failure_categories: List[FailureCategory] = Field(default_factory=list)
-    failure_details: Dict[str, List[FailureDetailItem]] = Field(default_factory=dict)
-    failures_by_feature: List[FeatureFailure] = Field(default_factory=list)
-    recent_failures: List[RecentFailure] = Field(default_factory=list)
+class TestResultsListResponse(BaseModel):
+    """Response for listing test results."""
+    results: List[Dict[str, Any]] = Field(default_factory=list)
+    total: int = 0
+    page: int = 1
+    page_size: int = 10
+
+
+class TestCaseListResponse(BaseModel):
+    """Response for listing test cases."""
+    test_cases: List[ScenarioResult] = Field(default_factory=list)
+    total: int = 0
+    page: int = 1
+    page_size: int = 10
+
+
+class StatisticsResponse(BaseModel):
+    """Response for statistics endpoint."""
+    total_test_cases: int = 0
+    status_counts: Dict[str, int] = Field(default_factory=dict)
+    pass_rate: float = 0.0
+    timestamp: str
+
+class TestHistory(BaseModel):
+    """Test history entry"""
+    report_id: str
+    status: str
+    timestamp: str
+    duration: float = 0.0
+
+class TestFlakiness(BaseModel):
+    """Flaky test information"""
+    id: str
+    name: str
+    feature: str
+    flakiness_score: float = Field(..., description="Score from 0.0 to 1.0, higher is more flaky")
+    total_runs: int
+    pass_count: int
+    fail_count: int
+    history: List[Dict[str, Any]] = []
+
+class TrendPoint(BaseModel):
+    """Data point for trend analysis"""
+    timestamp: str
+    report_id: str
+    total_tests: int = 0
+    passed_tests: int = 0
+    failed_tests: int = 0
+    pass_rate: float = 0.0
+    avg_duration: float = 0.0
+
+class TrendAnalysis(BaseModel):
+    """Trend analysis results"""
+    points: List[TrendPoint]
+    days_analyzed: int
+    environment: Optional[str] = None
+    feature: Optional[str] = None
+
+class FailureCorrelation(BaseModel):
+    """Correlation between test failures"""
+    id: str
+    test1_name: str
+    test1_feature: str
+    test2_name: str
+    test2_feature: str
+    correlation_score: float = Field(..., description="Score from 0.0 to 1.0, higher means stronger correlation")
+    co_failure_count: int = 0
+    test1_failure_count: int = 0
+    test2_failure_count: int = 0
+
+class PerformanceTestData(BaseModel):
+    """Performance data for a specific test"""
+    name: str
+    feature: str
+    avg_duration: float = 0.0
+    min_duration: float = 0.0
+    max_duration: float = 0.0
+    trend_percentage: float = 0.0  # Positive means getting slower, negative means getting faster
+    run_count: int = 0
+    history: List[Dict[str, Any]] = []
+
+class PerformanceMetrics(BaseModel):
+    """Performance metrics for tests"""
+    tests: List[PerformanceTestData]
+    overall_avg_duration: float = 0.0
+    days_analyzed: int
+    environment: Optional[str] = None
+    feature: Optional[str] = None
+
+class AnalyticsResponse(BaseModel):
+    """Comprehensive analytics summary"""
+    trends: TrendAnalysis
+    flaky_tests: List[TestFlakiness]
+    performance: PerformanceMetrics
+    correlations: List[FailureCorrelation]
+    days_analyzed: int
+    environment: Optional[str] = None
+    timestamp: str
+
+
+# Enums
+class ReportFormat(str, Enum):
+    """Report output format"""
+    HTML = "html"
+    PDF = "pdf"
+    CSV = "csv"
+
+class ReportStatus(str, Enum):
+    """Report generation status"""
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+class ReportType(str, Enum):
+    """Report template type"""
+    TEST_SUMMARY = "test_summary"
+    FLAKY_TESTS = "flaky_tests"
+    PERFORMANCE = "performance"
+    COMPREHENSIVE = "comprehensive"
+    CUSTOM = "custom"
+
+class ReportFrequency(str, Enum):
+    """Report schedule frequency"""
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
+# Parameter Schema
+class ParameterSchema(BaseModel):
+    """Definition of a report parameter"""
+    name: str
+    type: str
+    default: Any = None
+    description: Optional[str] = None
+
+# Template
+class ReportTemplate(BaseModel):
+    """Report template definition"""
+    id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    type: ReportType
+    parameters: List[Dict[str, Any]] = []
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+# Schedule
+class ReportSchedule(BaseModel):
+    """Schedule for periodic report generation"""
+    id: Optional[str] = None
+    name: str
+    template_id: str
+    parameters: Dict[str, Any] = {}
+    frequency: ReportFrequency
+    next_run: Optional[str] = None
+    created_at: Optional[str] = None
+
+# Report
+class Report(BaseModel):
+    """Generated report"""
+    id: str
+    name: str
+    template_id: str
+    parameters: Dict[str, Any] = {}
+    schedule_id: Optional[str] = None
+    status: ReportStatus
+    created_at: str
+    completed_at: Optional[str] = None
+    file_path: Optional[str] = None
+    format: str
+    error: Optional[str] = None
+
+# Subscription
+class ReportSubscription(BaseModel):
+    """Subscription to report deliveries"""
+    id: Optional[str] = None
+    user_id: str
+    template_id: Optional[str] = None
+    schedule_id: Optional[str] = None
+    delivery_method: str  # "email", "slack", etc.
+    delivery_config: Dict[str, Any] = {}
+    created_at: Optional[str] = None
+
+# Request bodies
+class CreateReportRequest(BaseModel):
+    """Request to generate a report"""
+    template_id: str
+    parameters: Dict[str, Any] = {}
+
+class CreateScheduleRequest(BaseModel):
+    """Request to schedule a report"""
+    name: str
+    template_id: str
+    parameters: Dict[str, Any] = {}
+    frequency: ReportFrequency
+    next_run: Optional[str] = None
+
+class CreateSubscriptionRequest(BaseModel):
+    """Request to subscribe to report deliveries"""
+    user_id: str
+    template_id: Optional[str] = None
+    schedule_id: Optional[str] = None
+    delivery_method: str
+    delivery_config: Dict[str, Any] = {}
+
+
+# Enums
+class NotificationPriority(str, Enum):
+    """Notification priority"""
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+class NotificationStatus(str, Enum):
+    """Notification status"""
+    PENDING = "pending"
+    SENDING = "sending"
+    DELIVERED = "delivered"
+    FAILED = "failed"
+
+class NotificationChannel(str, Enum):
+    """Notification delivery channel"""
+    EMAIL = "email"
+    IN_APP = "in_app"
+    SLACK = "slack"
+    TEAMS = "teams"
+    WEBHOOK = "webhook"
+
+# Models
+class NotificationDelivery(BaseModel):
+    """Notification delivery configuration"""
+    channel: NotificationChannel
+    recipient: str
+    config: Dict[str, Any] = {}
+
+class Notification(BaseModel):
+    """Notification message"""
+    id: str
+    title: str
+    content: str
+    user_id: str
+    priority: NotificationPriority = NotificationPriority.MEDIUM
+    status: NotificationStatus
+    created_at: str
+    updated_at: str
+    is_read: bool = False
+    delivery: NotificationDelivery
+    metadata: Dict[str, Any] = {}
+    error: Optional[str] = None
+
+class NotificationRule(BaseModel):
+    """Rule for generating notifications from events"""
+    id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    event_type: str
+    conditions: List[Dict[str, Any]] = []
+    priority: NotificationPriority = NotificationPriority.MEDIUM
+    template: Dict[str, str]
+    enabled: bool = True
+
+class NotificationSubscription(BaseModel):
+    """Subscription to notifications for a specific rule"""
+    id: Optional[str] = None
+    user_id: str
+    rule_id: str
+    channel: NotificationChannel = NotificationChannel.IN_APP
+    config: Dict[str, Any] = {}
+    created_at: Optional[str] = None
+
+# Request and response models
+class CreateNotificationRequest(BaseModel):
+    """Request to create a notification"""
+    title: str
+    content: str
+    user_id: str
+    priority: NotificationPriority = NotificationPriority.MEDIUM
+    channel: NotificationChannel = NotificationChannel.IN_APP
+    metadata: Optional[Dict[str, Any]] = None
+
+class ProcessEventRequest(BaseModel):
+    """Request to process an event and generate notifications"""
+    event_type: str
+    event_data: Dict[str, Any]
+
+class NotificationResponse(BaseModel):
+    """Response containing a list of notifications"""
+    notifications: List[Notification]
+    total: int
+    unread: int
+
+class CreateRuleRequest(BaseModel):
+    """Request to create a notification rule"""
+    name: str
+    description: Optional[str] = None
+    event_type: str
+    conditions: List[Dict[str, Any]] = []
+    priority: NotificationPriority = NotificationPriority.MEDIUM
+    template: Dict[str, str]
+    enabled: bool = True
+
+class CreateSubscriptionRequest(BaseModel):
+    """Request to create a notification subscription"""
+    user_id: str
+    rule_id: str
+    channel: NotificationChannel = NotificationChannel.IN_APP
+    config: Dict[str, Any] = {}
+
+class MarkAsReadRequest(BaseModel):
+    """Request to mark notifications as read"""
+    notification_ids: List[str] = []
+    all: bool = False

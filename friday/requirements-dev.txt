@@ -9,6 +9,7 @@ pytest-asyncio
 pytest-cov
 httpx
 respx
+aiohttp
 
 # Linting and formatting
 black

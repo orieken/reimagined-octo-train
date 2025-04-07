@@ -1,13 +1,11 @@
-# app/services/vector_db.py
 from typing import List, Dict, Any, Optional
 import logging
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
 
-from app.models.domain import Scenario as TestCase, Step as TestStep, TestRun as Report, BuildInfo, Feature
-from app.models.domain import TextChunk, ChunkMetadata
 from app.config import settings
+from app.models.domain import TextChunk, Report, TestStep, Feature, BuildInfo, TestCase
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +36,31 @@ class VectorDBService:
         self.cucumber_collection = collection_name or settings.CUCUMBER_COLLECTION
         self.build_info_collection = settings.BUILD_INFO_COLLECTION
         self.vector_size = vector_size or settings.VECTOR_DIMENSION
-        self.client = None  # Will be initialized later in initialize()
+        # Initialize client right away to avoid None access errors
+        self.client = self._initialize_client()
+
+    def _initialize_client(self) -> QdrantClient:
+        """Initialize and return a Qdrant client."""
+        try:
+            client_params = {"url": self.url}
+            if self.api_key:
+                client_params["api_key"] = self.api_key
+
+            client = QdrantClient(**client_params)
+
+            # Check connection if not in the middle of initialization
+            try:
+                client.get_collections()
+                logger.info("Successfully connected to Qdrant at %s", self.url)
+            except Exception as e:
+                logger.warning("Could not verify connection to Qdrant: %s", str(e))
+
+            return client
+        except Exception as e:
+            logger.error("Failed to connect to Qdrant: %s", str(e))
+            # Return a dummy client that will be reinitialized later
+            # instead of raising an exception
+            return QdrantClient(url=self.url)
 
     async def initialize(self) -> None:
         """Initialize the vector database connection and ensure collections exist."""
@@ -62,27 +84,6 @@ class VectorDBService:
             logger.error("Failed to initialize Qdrant connection: %s", str(e))
             raise ConnectionError(f"Could not connect to Qdrant: {str(e)}")
 
-    def _initialize_client(self) -> QdrantClient:
-        """Initialize and return a Qdrant client (used if initialize() wasn't called)."""
-        if self.client is not None:
-            return self.client
-
-        try:
-            client_params = {"url": self.url}
-            if self.api_key:
-                client_params["api_key"] = self.api_key
-
-            client = QdrantClient(**client_params)
-
-            # Check connection
-            client.get_collections()
-            logger.info("Successfully connected to Qdrant at %s", self.url)
-            self.client = client
-            return client
-        except Exception as e:
-            logger.error("Failed to connect to Qdrant: %s", str(e))
-            raise ConnectionError(f"Could not connect to Qdrant: {str(e)}")
-
     async def ensure_collections_exist(self):
         """Ensure all required collections exist in Qdrant."""
         # Make sure client is initialized
@@ -94,20 +95,24 @@ class VectorDBService:
             self.build_info_collection: self.vector_size
         }
 
-        existing_collections = [
-            collection.name for collection in self.client.get_collections().collections
-        ]
+        try:
+            existing_collections = [
+                collection.name for collection in self.client.get_collections().collections
+            ]
 
-        for collection_name, vector_size in collections.items():
-            if collection_name not in existing_collections:
-                logger.info("Creating collection: %s", collection_name)
-                self.client.create_collection(
-                    collection_name=collection_name,
-                    vectors_config=qdrant_models.VectorParams(
-                        size=vector_size,
-                        distance=qdrant_models.Distance.COSINE
+            for collection_name, vector_size in collections.items():
+                if collection_name not in existing_collections:
+                    logger.info("Creating collection: %s", collection_name)
+                    self.client.create_collection(
+                        collection_name=collection_name,
+                        vectors_config=qdrant_models.VectorParams(
+                            size=vector_size,
+                            distance=qdrant_models.Distance.COSINE
+                        )
                     )
-                )
+        except Exception as e:
+            logger.error("Failed to ensure collections exist: %s", str(e))
+            # Continue without raising to allow the service to start
 
     def store_chunk(self, text_chunk: TextChunk, embedding: List[float], collection_name: Optional[str] = None) -> None:
         """Store a text chunk with its embedding in the vector database."""

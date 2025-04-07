@@ -28,18 +28,18 @@ class Settings(BaseSettings):
 
     # LLM settings
     OLLAMA_API_URL: str = Field(default="http://localhost:11434")
-    OLLAMA_MODEL: str = Field(default="llama2")
+    OLLAMA_MODEL: str = Field(default="llama3.3:latest")
     OLLAMA_TIMEOUT: int = Field(default=60)
-    LLM_MODEL: str = "llama3"
+    LLM_MODEL: str = "llama3.3:latest"
     LLM_TIMEOUT: int = 60
 
     # Vector DB settings
     QDRANT_URL: str = Field(default="http://localhost:6333")
     QDRANT_COLLECTION: str = Field(default="friday_tests")
-    QDRANT_VECTOR_SIZE: int = Field(default=384)  # Depends on embedding model
+    QDRANT_VECTOR_SIZE: int = Field(default=1536)  # Depends on embedding model
     VECTOR_DB_TYPE: str = "qdrant"
-    VECTOR_DIMENSION: int = 384
-    CUCUMBER_COLLECTION: str = "cucumber_reports"
+    VECTOR_DIMENSION: int = 1536
+    CUCUMBER_COLLECTION: str = "test_artifacts"
     BUILD_INFO_COLLECTION: str = "build_info"
 
     # Embedding settings
@@ -56,6 +56,17 @@ class Settings(BaseSettings):
 
     # Storage settings
     DATA_DIR: str = "./data"
+
+    # Notification settings
+    NOTIFICATIONS_DIR: str = "data/notifications"
+
+    # In your config.py where Settings is defined
+    DATABASE_URL: str = "sqlite:///./friday.db"  # or your preferred database URL
+
+    # WebSocket related settings
+    ENABLE_SYSTEM_NOTIFICATIONS: bool = False  # Set to True to send periodic system notifications
+    WEBSOCKET_HEARTBEAT_TIMEOUT: int = 60  # Seconds until a connection is considered stale
+
 
     @validator("OLLAMA_API_URL", "QDRANT_URL")
     def validate_urls(cls, v):

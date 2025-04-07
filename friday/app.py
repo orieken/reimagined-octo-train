@@ -14,6 +14,8 @@ from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
 
+from friday.app.config import settings
+
 # Initialize the FastAPI app
 app = FastAPI(
     title="Friday - Test Analysis RAG Pipeline",
@@ -35,7 +37,7 @@ OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://ollama:11434")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 LLM_MODEL = os.getenv("LLM_MODEL", "llama3")
-VECTOR_DIM = 384  # Dimension for all-MiniLM-L6-v2
+VECTOR_DIM = settings.VECTOR_DIMENSION  # Dimension for all-MiniLM-L6-v2
 
 # Initialize the embedding model
 model = SentenceTransformer(EMBEDDING_MODEL)
@@ -45,8 +47,8 @@ qdrant_client = QdrantClient(url=QDRANT_URL)
 
 # Ensure collections exist
 COLLECTIONS = {
-    "cucumber_reports": {
-        "name": "cucumber_reports",
+    "test_artifacts": {
+        "name": "test_artifacts",
         "vector_size": VECTOR_DIM
     },
     "build_info": {
@@ -200,7 +202,7 @@ async def process_cucumber_reports(report: CucumberReport):
 
     # Add to vector database
     operation_info = qdrant_client.upsert(
-        collection_name=COLLECTIONS["cucumber_reports"]["name"],
+        collection_name=COLLECTIONS["test_artifacts"]["name"],
         points=points
     )
 
@@ -259,7 +261,7 @@ async def query_test_data(query_request: Query):
 
     # Search in both collections
     cucumber_results = qdrant_client.search(
-        collection_name=COLLECTIONS["cucumber_reports"]["name"],
+        collection_name=COLLECTIONS["test_artifacts"]["name"],
         query_vector=query_embedding.tolist(),
         limit=query_request.limit
     )
@@ -335,7 +337,7 @@ async def get_statistics():
 
     # Get all points from cucumber reports
     report_points = qdrant_client.scroll(
-        collection_name=COLLECTIONS["cucumber_reports"]["name"],
+        collection_name=COLLECTIONS["test_artifacts"]["name"],
         limit=10000,
         with_payload=True,
         with_vectors=False

@@ -1,198 +1,361 @@
-"""
-API routes for test trends
-"""
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Query
+# app/api/routes/trends.py
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from typing import List, Dict, Any, Optional
+import logging
+from datetime import datetime
+import uuid
 
-router = APIRouter()
+from app.config import settings
+from app.services.orchestrator import ServiceOrchestrator
+from app.api.dependencies import get_orchestrator_service
+from app.models.domain import (
+    TestRun as Report, Scenario as TestCase, BuildInfo
+)
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix=settings.API_PREFIX, tags=["trends"])
 
 
-@router.get("/trends")
-async def get_test_trends(
-        time_range: str = Query("week", description="Time range for trends (week, month, year)")
+@router.get("/trends/pass-rate", response_model=Dict[str, Any])
+async def get_pass_rate_trend(
+        days: int = Query(30, description="Number of days to analyze"),
+        environment: Optional[str] = Query(None, description="Filter by environment"),
+        feature: Optional[str] = Query(None, description="Filter by feature"),
+        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
 ):
     """
-    Get test trends over time
+    Get pass rate trend over time.
 
-    Returns:
-        dict: Test trends data including daily trends, build comparison, etc.
+    This endpoint returns the pass rate trend over the specified number of days,
+    optionally filtered by environment and feature.
     """
     try:
-        # In Phase 1, we return a mock response
-        # This will be replaced with actual data retrieval in Phase 5
+        # Build query with filters
+        query_parts = ["pass rate trend"]
 
-        # Generate appropriate data based on time range
-        if time_range == "week":
-            data = generate_daily_trends(7)
-        elif time_range == "month":
-            data = generate_daily_trends(30)
-        else:  # year
-            data = generate_weekly_trends(12)
+        if environment:
+            query_parts.append(f"environment:{environment}")
 
-        # Return direct format expected by frontend
+        if feature:
+            query_parts.append(f"feature:{feature}")
+
+        query = " ".join(query_parts)
+
+        # Generate embedding for the query
+        query_embedding = await orchestrator.llm.generate_embedding(query)
+
+        # Search for reports
+        filters = {"type": "report"}
+
+        if environment:
+            filters["environment"] = environment
+
+        # Get a larger sample of reports for trend analysis
+        report_results = await orchestrator.semantic_search(
+            query=query,
+            filters=filters,
+            limit=100  # Larger limit for more comprehensive analysis
+        )
+
+        # Group reports by date
+        date_groups = {}
+        for report in report_results:
+            timestamp = report.payload.get("timestamp", "")
+            if not timestamp:
+                continue
+
+            # Extract date part only
+            date = timestamp.split("T")[0]
+
+            if date not in date_groups:
+                date_groups[date] = []
+
+            date_groups[date].append(report.payload)
+
+        # Calculate pass rate for each date
+        trend_data = []
+        for date, reports in sorted(date_groups.items()):
+            total_tests = 0
+            passed_tests = 0
+
+            for report in reports:
+                # We would need to get test cases for each report to be accurate
+                # This is a simplification for illustration
+                test_cases = []
+
+                if feature:
+                    # If feature filter is applied, search for test cases with that feature
+                    test_cases_results = orchestrator.vector_db.search_test_cases(
+                        query_embedding=query_embedding,
+                        report_id=report.get("id"),
+                        limit=1000
+                    )
+
+                    test_cases = [tc.payload for tc in test_cases_results if tc.payload.get("feature") == feature]
+                else:
+                    # Otherwise, use report statistics if available
+                    total_tests += report.get("total_tests", 0)
+                    passed_tests += report.get("passed_tests", 0)
+
+                if test_cases:
+                    total_tests += len(test_cases)
+                    passed_tests += len([tc for tc in test_cases if tc.get("status") == "PASSED"])
+
+            if total_tests > 0:
+                pass_rate = (passed_tests / total_tests) * 100
+            else:
+                pass_rate = 0
+
+            trend_data.append({
+                "date": date,
+                "pass_rate": round(pass_rate, 2),
+                "total_tests": total_tests,
+                "passed_tests": passed_tests
+            })
+
+        # Return the trend data
         return {
-            "dailyTrends": data["dailyTrends"],
-            "buildComparison": data["buildComparison"],
-            "topFailingTests": data["topFailingTests"]
+            "days": days,
+            "environment": environment,
+            "feature": feature,
+            "trend_data": trend_data,
+            "timestamp": datetime.now().isoformat()
         }
-
     except Exception as e:
+        logger.error(f"Error retrieving pass rate trend: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve pass rate trend: {str(e)}"
+        )
+
+
+@router.get("/trends/duration", response_model=Dict[str, Any])
+async def get_duration_trend(
+        days: int = Query(30, description="Number of days to analyze"),
+        environment: Optional[str] = Query(None, description="Filter by environment"),
+        feature: Optional[str] = Query(None, description="Filter by feature"),
+        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
+):
+    """
+    Get test duration trend over time.
+
+    This endpoint returns the test duration trend over the specified number of days,
+    optionally filtered by environment and feature.
+    """
+    try:
+        # Build query with filters
+        query_parts = ["test duration trend"]
+
+        if environment:
+            query_parts.append(f"environment:{environment}")
+
+        if feature:
+            query_parts.append(f"feature:{feature}")
+
+        query = " ".join(query_parts)
+
+        # Generate embedding for the query
+        query_embedding = await orchestrator.llm.generate_embedding(query)
+
+        # Search for reports
+        filters = {"type": "report"}
+
+        if environment:
+            filters["environment"] = environment
+
+        # Get a larger sample of reports for trend analysis
+        report_results = await orchestrator.semantic_search(
+            query=query,
+            filters=filters,
+            limit=100  # Larger limit for more comprehensive analysis
+        )
+
+        # Group reports by date
+        date_groups = {}
+        for report in report_results:
+            timestamp = report.payload.get("timestamp", "")
+            if not timestamp:
+                continue
+
+            # Extract date part only
+            date = timestamp.split("T")[0]
+
+            if date not in date_groups:
+                date_groups[date] = []
+
+            date_groups[date].append(report.payload)
+
+        # Calculate average duration for each date
+        trend_data = []
+        for date, reports in sorted(date_groups.items()):
+            total_duration = 0
+            total_test_cases = 0
+
+            for report in reports:
+                duration = report.get("duration", 0)
+                test_cases_count = report.get("total_tests", 0)
+
+                if feature:
+                    # If feature filter is applied, search for test cases with that feature
+                    test_cases_results = orchestrator.vector_db.search_test_cases(
+                        query_embedding=query_embedding,
+                        report_id=report.get("id"),
+                        limit=1000
+                    )
+
+                    feature_test_cases = [tc.payload for tc in test_cases_results if
+                                          tc.payload.get("feature") == feature]
+
+                    if feature_test_cases:
+                        feature_duration = sum(tc.get("duration", 0) for tc in feature_test_cases)
+                        total_duration += feature_duration
+                        total_test_cases += len(feature_test_cases)
+                else:
+                    total_duration += duration
+                    total_test_cases += test_cases_count
+
+            if total_test_cases > 0:
+                avg_duration = total_duration / total_test_cases
+            else:
+                avg_duration = 0
+
+            trend_data.append({
+                "date": date,
+                "avg_duration": round(avg_duration, 2),
+                "total_duration": total_duration,
+                "total_tests": total_test_cases
+            })
+
+        # Return the trend data
         return {
-            "status": "error",
-            "message": f"Failed to retrieve test trends: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat()
+            "days": days,
+            "environment": environment,
+            "feature": feature,
+            "trend_data": trend_data,
+            "timestamp": datetime.now().isoformat()
         }
+    except Exception as e:
+        logger.error(f"Error retrieving duration trend: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve duration trend: {str(e)}"
+        )
 
 
-def generate_daily_trends(days: int) -> Dict:
+@router.post("/trends/builds", response_model=Dict[str, Any])
+async def analyze_build_trend(
+        build_numbers: List[str],
+        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
+):
     """
-    Generate mock daily trends data
+    Analyze trends across multiple builds.
 
-    Args:
-        days: Number of days to generate data for
-
-    Returns:
-        Dict: Mock trends data
+    This endpoint analyzes trends across the specified builds,
+    including pass rate, duration, and other metrics.
     """
-    daily_data = []
-    now = datetime.utcnow()
-
-    for i in range(days - 1, -1, -1):
-        date = now - timedelta(days=i)
-        date_str = date.strftime("%b %d")  # Format: "Mar 28"
-
-        # Generate slightly varying data
-        total = 100 + int((days - i) * 1.5)
-        pass_rate = 75.0 + (15.0 * ((days - i) % 3) / 3)  # Varies between 75 and 90
-        passed = int(total * (pass_rate / 100))
-        failed = total - passed
-
-        daily_data.append({
-            "date": date_str,
-            "totalTests": total,
-            "passedTests": passed,
-            "failedTests": failed,
-            "passRate": round(pass_rate, 1)
-        })
-
-    # Build comparison data
-    build_data = []
-    for i in range(5):
-        build_number = f"#{1045 - i}"
-        pass_rate = 75.0 + (15.0 * (i % 4) / 4)  # Varies between 75 and 90
-
-        build_data.append({
-            "buildNumber": build_number,
-            "passRate": round(pass_rate, 1)
-        })
-
-    # Top failing tests
-    failing_tests = [
-        {
-            "name": "User authentication with invalid credentials",
-            "failureRate": 35.0,
-            "occurrences": 8
-        },
-        {
-            "name": "Product checkout with expired credit card",
-            "failureRate": 32.0,
-            "occurrences": 7
-        },
-        {
-            "name": "Search functionality with special characters",
-            "failureRate": 28.0,
-            "occurrences": 6
-        },
-        {
-            "name": "User profile update with invalid data",
-            "failureRate": 25.0,
-            "occurrences": 5
-        },
-        {
-            "name": "Product catalog filtering by multiple criteria",
-            "failureRate": 22.0,
-            "occurrences": 4
-        }
-    ]
-
-    return {
-        "dailyTrends": daily_data,
-        "buildComparison": build_data,
-        "topFailingTests": failing_tests
-    }
+    try:
+        # Use the orchestrator method to analyze build trends
+        result = await orchestrator.analyze_build_trend(build_numbers)
+        return result
+    except Exception as e:
+        logger.error(f"Error analyzing build trend: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to analyze build trend: {str(e)}"
+        )
 
 
-def generate_weekly_trends(weeks: int) -> Dict:
+@router.get("/trends/top-failing-features", response_model=List[Dict[str, Any]])
+async def get_top_failing_features(
+        days: int = Query(30, description="Number of days to analyze"),
+        limit: int = Query(5, description="Maximum number of features to return"),
+        environment: Optional[str] = Query(None, description="Filter by environment"),
+        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
+):
     """
-    Generate mock weekly trends data
+    Get top failing features.
 
-    Args:
-        weeks: Number of weeks to generate data for
-
-    Returns:
-        Dict: Mock trends data
+    This endpoint returns the features with the highest failure rates
+    over the specified number of days.
     """
-    weekly_data = []
+    try:
+        # Build query with filters
+        query_parts = ["failing features"]
 
-    for i in range(weeks):
-        week_num = i + 1
+        if environment:
+            query_parts.append(f"environment:{environment}")
 
-        # Generate slightly varying data
-        total = 500 + int((weeks - i) * 10)
-        pass_rate = 75.0 + (15.0 * ((weeks - i) % 3) / 3)  # Varies between 75 and 90
-        passed = int(total * (pass_rate / 100))
-        failed = total - passed
+        query = " ".join(query_parts)
 
-        weekly_data.append({
-            "date": f"Week {week_num}",
-            "totalTests": total,
-            "passedTests": passed,
-            "failedTests": failed,
-            "passRate": round(pass_rate, 1)
-        })
+        # Generate embedding for the query
+        query_embedding = await orchestrator.llm.generate_embedding(query)
 
-    # Same build comparison and failing tests as daily
-    build_data = []
-    for i in range(5):
-        build_number = f"#{1045 - i}"
-        pass_rate = 75.0 + (15.0 * (i % 4) / 4)  # Varies between 75 and 90
+        # Search for test cases
+        filters = {"type": "test_case"}
 
-        build_data.append({
-            "buildNumber": build_number,
-            "passRate": round(pass_rate, 1)
-        })
+        if environment:
+            filters["environment"] = environment
 
-    failing_tests = [
-        {
-            "name": "User authentication with invalid credentials",
-            "failureRate": 35.0,
-            "occurrences": 8
-        },
-        {
-            "name": "Product checkout with expired credit card",
-            "failureRate": 32.0,
-            "occurrences": 7
-        },
-        {
-            "name": "Search functionality with special characters",
-            "failureRate": 28.0,
-            "occurrences": 6
-        },
-        {
-            "name": "User profile update with invalid data",
-            "failureRate": 25.0,
-            "occurrences": 5
-        },
-        {
-            "name": "Product catalog filtering by multiple criteria",
-            "failureRate": 22.0,
-            "occurrences": 4
-        }
-    ]
+        # Get a larger sample of test cases for analysis
+        test_case_results = await orchestrator.semantic_search(
+            query=query,
+            filters=filters,
+            limit=1000  # Larger limit for more comprehensive analysis
+        )
 
-    return {
-        "dailyTrends": weekly_data,  # Use the same key for consistency
-        "buildComparison": build_data,
-        "topFailingTests": failing_tests
-    }
+        # Group test cases by feature
+        feature_groups = {}
+        for tc in test_case_results:
+            feature = tc.payload.get("feature", "Unknown")
+
+            if feature not in feature_groups:
+                feature_groups[feature] = {
+                    "name": feature,
+                    "total_tests": 0,
+                    "failed_tests": 0,
+                    "passed_tests": 0
+                }
+
+            feature_groups[feature]["total_tests"] += 1
+
+            status = tc.payload.get("status")
+            if status == "FAILED":
+                feature_groups[feature]["failed_tests"] += 1
+            elif status == "PASSED":
+                feature_groups[feature]["passed_tests"] += 1
+
+        # Calculate failure rate for each feature
+        for feature_data in feature_groups.values():
+            if feature_data["total_tests"] > 0:
+                feature_data["failure_rate"] = (feature_data["failed_tests"] / feature_data["total_tests"]) * 100
+            else:
+                feature_data["failure_rate"] = 0
+
+        # Sort features by failure rate (descending)
+        sorted_features = sorted(
+            feature_groups.values(),
+            key=lambda x: x["failure_rate"],
+            reverse=True
+        )
+
+        # Apply limit
+        top_features = sorted_features[:limit]
+
+        # Return the top failing features
+        return [
+            {
+                "feature": f["name"],
+                "failure_rate": round(f["failure_rate"], 2),
+                "total_tests": f["total_tests"],
+                "failed_tests": f["failed_tests"],
+                "passed_tests": f["passed_tests"]
+            }
+            for f in top_features
+        ]
+    except Exception as e:
+        logger.error(f"Error retrieving top failing features: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve top failing features: {str(e)}"
+        )

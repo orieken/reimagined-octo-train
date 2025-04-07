@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 import uuid
 
-from app.config.config import settings
+from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
 from app.models.domain import (

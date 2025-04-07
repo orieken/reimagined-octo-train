@@ -1,0 +1,2799 @@
+{
+  "metadata": {
+    "project": "E-commerce Platform",
+    "branch": "main",
+    "commit": "087007e",
+    "timestamp": "2025-04-06T00:37:50.398493",
+    "runner": "cucumber-js"
+  },
+  "report": [
+    {
+      "uri": "feature-file-0.feature",
+      "id": "feature-0-user-account-profile-information",
+      "keyword": "Feature",
+      "name": "User Account - Profile Information",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-viewing-profile-information",
+          "keyword": "Scenario",
+          "name": "Viewing profile information",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am logged in",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I navigate to the \"Profile Information\" section",
+              "line": 5,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see my name, email address, and phone number (if provided)",
+              "line": 6,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-updating-profile-name",
+          "keyword": "Scenario",
+          "name": "Updating profile name",
+          "description": "",
+          "line": 8,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Edit Profile\" page",
+              "line": 9,
+              "result": {
+                "status": "failed",
+                "error_message": "Expected 'success' but got 'error'"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I change my first name to \"Jane\"",
+              "line": 10,
+              "result": {
+                "status": "skipped",
+                "error_message": "Element not found in DOM"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Save Changes\"",
+              "line": 11,
+              "result": {
+                "status": "skipped",
+                "error_message": "Unexpected alert prevented click operation"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "my displayed first name should be updated to \"Jane\"",
+              "line": 12,
+              "result": {
+                "status": "skipped",
+                "error_message": "Element was present but not visible"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see a success message",
+              "line": 13,
+              "result": {
+                "status": "skipped",
+                "error_message": "Expected text not found on page"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-0.feature",
+      "id": "feature-0-user-account-address-book",
+      "keyword": "Feature",
+      "name": "User Account - Address Book",
+      "description": "",
+      "line": 15,
+      "elements": [
+        {
+          "id": "scenario-0-adding-a-new-shipping-address",
+          "keyword": "Scenario",
+          "name": "Adding a new shipping address",
+          "description": "",
+          "line": 17,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Address Book\" page",
+              "line": 18,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click \"Add New Address\"",
+              "line": 19,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a new address \"456 Oak Ave, Anytown, CA 90211\"",
+              "line": 20,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Save Address\"",
+              "line": 21,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "the new address should be listed in my address book",
+              "line": 22,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-setting-a-default-shipping-address",
+          "keyword": "Scenario",
+          "name": "Setting a default shipping address",
+          "description": "",
+          "line": 24,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have multiple addresses in my address book",
+              "line": 25,
+              "result": {
+                "status": "failed",
+                "error_message": "Expected 'success' but got 'error'"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click the \"Set as Default\" button next to an address",
+              "line": 26,
+              "result": {
+                "status": "skipped"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "that address should be marked as my default shipping address",
+              "line": 27,
+              "result": {
+                "status": "failed",
+                "error_message": "Element not found in DOM"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-0.feature",
+      "id": "feature-0-user-account-payment-methods",
+      "keyword": "Feature",
+      "name": "User Account - Payment Methods",
+      "description": "",
+      "line": 29,
+      "elements": [
+        {
+          "id": "scenario-0-adding-a-new-payment-method",
+          "keyword": "Scenario",
+          "name": "Adding a new payment method",
+          "description": "",
+          "line": 31,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Payment Methods\" page",
+              "line": 32,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click \"Add New Payment Method\"",
+              "line": 33,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter valid credit card details",
+              "line": 34,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Save Payment Method\"",
+              "line": 35,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "the new payment method should be listed in my saved payment methods",
+              "line": 36,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-1.feature",
+      "id": "feature-1-shopping-cart",
+      "keyword": "Feature",
+      "name": "Shopping Cart",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-adding-a-product-to-the-cart",
+          "keyword": "Scenario",
+          "name": "Adding a product to the cart",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"Eco-Friendly Water Bottle\"",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click the \"Add to Cart\" button",
+              "line": 5,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "the \"Shopping Cart\" icon should display \"1\" item",
+              "line": 6,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see a notification that the product has been added to the cart",
+              "line": 7,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-viewing-items-in-the-cart",
+          "keyword": "Scenario",
+          "name": "Viewing items in the cart",
+          "description": "",
+          "line": 9,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have added \"Eco-Friendly Water Bottle\" to my cart",
+              "line": 10,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I navigate to the \"Shopping Cart\" page",
+              "line": 11,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see \"Eco-Friendly Water Bottle\" listed in my cart",
+              "line": 12,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see the quantity, price per item, and subtotal",
+              "line": 13,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-increasing-the-quantity-of-an-item-in-the-cart",
+          "keyword": "Scenario",
+          "name": "Increasing the quantity of an item in the cart",
+          "description": "",
+          "line": 15,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have one \"Eco-Friendly Water Bottle\" in my cart",
+              "line": 16,
+              "result": {
+                "status": "failed",
+                "error_message": "Expected true but got false"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I increase the quantity to \"2\"",
+              "line": 17,
+              "result": {
+                "status": "skipped",
+                "error_message": "Network request failed with status 500"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "the quantity of \"Eco-Friendly Water Bottle\" in my cart should be \"2\"",
+              "line": 18,
+              "result": {
+                "status": "skipped",
+                "error_message": "Connection refused"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "the cart subtotal should be updated accordingly",
+              "line": 19,
+              "result": {
+                "status": "skipped",
+                "error_message": "Assertion failed: Expected element to be visible"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-3-decreasing-the-quantity-of-an-item-in-the-cart",
+          "keyword": "Scenario",
+          "name": "Decreasing the quantity of an item in the cart",
+          "description": "",
+          "line": 21,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have two \"Eco-Friendly Water Bottles\" in my cart",
+              "line": 22,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I decrease the quantity to \"1\"",
+              "line": 23,
+              "result": {
+                "status": "failed",
+                "error_message": "Expected true but got false"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "the quantity of \"Eco-Friendly Water Bottle\" in my cart should be \"1\"",
+              "line": 24,
+              "result": {
+                "status": "skipped"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "the cart subtotal should be updated accordingly",
+              "line": 25,
+              "result": {
+                "status": "skipped"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-4-removing-an-item-from-the-cart",
+          "keyword": "Scenario",
+          "name": "Removing an item from the cart",
+          "description": "",
+          "line": 27,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have \"Eco-Friendly Water Bottle\" and \"Reusable Shopping Bag\" in my cart",
+              "line": 28,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click the \"Remove\" button next to \"Reusable Shopping Bag\"",
+              "line": 29,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "\"Reusable Shopping Bag\" should be removed from my cart",
+              "line": 30,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "the cart subtotal should be updated",
+              "line": 31,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-5-applying-a-discount-code-to-the-cart",
+          "keyword": "Scenario",
+          "name": "Applying a discount code to the cart",
+          "description": "",
+          "line": 33,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have items in my cart",
+              "line": 34,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter a valid discount code \"SUMMER20\" in the discount code field",
+              "line": 35,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Apply\"",
+              "line": 36,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "a discount should be applied to my order total",
+              "line": 37,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see the discounted price",
+              "line": 38,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-6-attempting-to-apply-an-invalid-discount-code",
+          "keyword": "Scenario",
+          "name": "Attempting to apply an invalid discount code",
+          "description": "",
+          "line": 40,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have items in my cart",
+              "line": 41,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter an invalid discount code \"INVALIDCODE\" in the discount code field",
+              "line": 42,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Apply\"",
+              "line": 43,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message indicating the code is invalid",
+              "line": 44,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "no discount should be applied",
+              "line": 45,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-7-proceeding-to-checkout-from-the-cart",
+          "keyword": "Scenario",
+          "name": "Proceeding to checkout from the cart",
+          "description": "",
+          "line": 47,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have items in my cart",
+              "line": 48,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click the \"Proceed to Checkout\" button",
+              "line": 49,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should be redirected to the checkout page",
+              "line": 50,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-2.feature",
+      "id": "feature-2-product-browsing",
+      "keyword": "Feature",
+      "name": "Product Browsing",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-viewing-all-products-on-the-homepage",
+          "keyword": "Scenario",
+          "name": "Viewing all products on the homepage",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the homepage",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I navigate to the \"Products\" section",
+              "line": 5,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a list of products",
+              "line": 6,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-filtering-products-by-category",
+          "keyword": "Scenario",
+          "name": "Filtering products by category",
+          "description": "",
+          "line": 8,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Products\" page",
+              "line": 9,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I select the \"Electronics\" category filter",
+              "line": 10,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should only see products belonging to the \"Electronics\" category",
+              "line": 11,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-sorting-products-by-price-low-to-high",
+          "keyword": "Scenario",
+          "name": "Sorting products by price (low to high)",
+          "description": "",
+          "line": 13,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Products\" page",
+              "line": 14,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I select \"Price: Low to High\" from the sort options",
+              "line": 15,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "the products should be displayed in ascending order of price",
+              "line": 16,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-3-searching-for-a-product-by-name",
+          "keyword": "Scenario",
+          "name": "Searching for a product by name",
+          "description": "",
+          "line": 18,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on any page",
+              "line": 19,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter \"coffee maker\" in the search bar",
+              "line": 20,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the search button",
+              "line": 21,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see search results containing \"coffee maker\"",
+              "line": 22,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-4-viewing-product-details",
+          "keyword": "Scenario",
+          "name": "Viewing product details",
+          "description": "",
+          "line": 24,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Products\" page",
+              "line": 25,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click on a product named \"Wireless Headphones\"",
+              "line": 26,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should be redirected to the product details page for \"Wireless Headphones\"",
+              "line": 27,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see the product name, description, and price",
+              "line": 28,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-5-applying-multiple-filters",
+          "keyword": "Scenario",
+          "name": "Applying multiple filters",
+          "description": "",
+          "line": 30,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Products\" page",
+              "line": 31,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I select the \"Electronics\" category filter",
+              "line": 32,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I select the \"Brand: Sony\" filter",
+              "line": 33,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should only see \"Sony\" brand products within the \"Electronics\" category",
+              "line": 34,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-6-clearing-applied-filters",
+          "keyword": "Scenario",
+          "name": "Clearing applied filters",
+          "description": "",
+          "line": 36,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have applied filters for \"Electronics\" and \"Brand: Sony\" on the \"Products\" page",
+              "line": 37,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click the \"Clear Filters\" button",
+              "line": 38,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "all filters should be removed",
+              "line": 39,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see products from all categories and brands",
+              "line": 40,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-3.feature",
+      "id": "feature-3-customer-support-contact-form",
+      "keyword": "Feature",
+      "name": "Customer Support - Contact Form",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-submitting-a-contact-form-with-valid-details",
+          "keyword": "Scenario",
+          "name": "Submitting a contact form with valid details",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Contact Us\" page",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter my name \"Alice Smith\"",
+              "line": 5,
+              "result": {
+                "status": "failed",
+                "error_message": "Cannot focus on input element"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter my email \"alice.smith@example.com\"",
+              "line": 6,
+              "result": {
+                "status": "skipped"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a subject \"Order Inquiry\"",
+              "line": 7,
+              "result": {
+                "status": "skipped",
+                "error_message": "Cannot focus on input element"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a message \"I have a question about my recent order.\"",
+              "line": 8,
+              "result": {
+                "status": "failed",
+                "error_message": "Cannot focus on input element"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Submit\" button",
+              "line": 9,
+              "result": {
+                "status": "skipped",
+                "error_message": "Element is not clickable at point (120, 380)"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a confirmation message indicating that my message has been sent",
+              "line": 10,
+              "result": {
+                "status": "skipped",
+                "error_message": "Expected content missing from response"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "the website should attempt to send an email to customer support",
+              "line": 11,
+              "result": {
+                "status": "skipped",
+                "error_message": "Expected true but got false"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-attempting-to-submit-a-contact-form-with-a-missing-email",
+          "keyword": "Scenario",
+          "name": "Attempting to submit a contact form with a missing email",
+          "description": "",
+          "line": 13,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Contact Us\" page",
+              "line": 14,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter my name \"Bob Johnson\"",
+              "line": 15,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I leave the email field blank",
+              "line": 16,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a subject \"General Question\"",
+              "line": 17,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a message \"This is a general inquiry.\"",
+              "line": 18,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Submit\" button",
+              "line": 19,
+              "result": {
+                "status": "pending"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message indicating that the email field is required",
+              "line": 20,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-attempting-to-submit-a-contact-form-with-an-invalid-email-format",
+          "keyword": "Scenario",
+          "name": "Attempting to submit a contact form with an invalid email format",
+          "description": "",
+          "line": 22,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Contact Us\" page",
+              "line": 23,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter my name \"Charlie Brown\"",
+              "line": 24,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter an invalid email \"charlie.brown\"",
+              "line": 25,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a subject \"Website Issue\"",
+              "line": 26,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a message \"I am experiencing a problem with the website.\"",
+              "line": 27,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Submit\" button",
+              "line": 28,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message indicating that the email format is invalid",
+              "line": 29,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-3.feature",
+      "id": "feature-3-customer-support-faq",
+      "keyword": "Feature",
+      "name": "Customer Support - FAQ",
+      "description": "",
+      "line": 31,
+      "elements": [
+        {
+          "id": "scenario-0-viewing-the-faq-page",
+          "keyword": "Scenario",
+          "name": "Viewing the FAQ page",
+          "description": "",
+          "line": 33,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on any page",
+              "line": 34,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I navigate to the \"FAQ\" page",
+              "line": 35,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a list of frequently asked questions and their answers",
+              "line": 36,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-expanding-an-answer-to-a-question",
+          "keyword": "Scenario",
+          "name": "Expanding an answer to a question",
+          "description": "",
+          "line": 38,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"FAQ\" page",
+              "line": 39,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click on the question \"What is your return policy?\"",
+              "line": 40,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "the answer to \"What is your return policy?\" should be displayed",
+              "line": 41,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-searching-for-a-keyword-in-the-faq",
+          "keyword": "Scenario",
+          "name": "Searching for a keyword in the FAQ",
+          "description": "",
+          "line": 43,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"FAQ\" page",
+              "line": 44,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter \"shipping\" in the FAQ search bar",
+              "line": 45,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the search button",
+              "line": 46,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a list of FAQ items related to \"shipping\"",
+              "line": 47,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-4.feature",
+      "id": "feature-4-product-reviews",
+      "keyword": "Feature",
+      "name": "Product Reviews",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-viewing-existing-product-reviews",
+          "keyword": "Scenario",
+          "name": "Viewing existing product reviews",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"Electric Kettle\"",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a section displaying customer reviews and their ratings",
+              "line": 5,
+              "result": {
+                "status": "undefined"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-submitting-a-product-review-as-a-logged-in-user",
+          "keyword": "Scenario",
+          "name": "Submitting a product review as a logged-in user",
+          "description": "",
+          "line": 7,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am logged in and on the product detail page for \"Travel Backpack\"",
+              "line": 8,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter a review text \"Great backpack for travel!\"",
+              "line": 9,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I select a rating of 5 stars",
+              "line": 10,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Submit Review\"",
+              "line": 11,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "my review should be displayed on the product detail page",
+              "line": 12,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "my username should be associated with the review",
+              "line": 13,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-attempting-to-submit-a-review-without-a-rating",
+          "keyword": "Scenario",
+          "name": "Attempting to submit a review without a rating",
+          "description": "",
+          "line": 15,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am logged in and on the product detail page for a product",
+              "line": 16,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter a review text",
+              "line": 17,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I do not select a rating",
+              "line": 18,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Submit Review\"",
+              "line": 19,
+              "result": {
+                "status": "pending"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message asking me to provide a rating",
+              "line": 20,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-3-viewing-the-average-product-rating",
+          "keyword": "Scenario",
+          "name": "Viewing the average product rating",
+          "description": "",
+          "line": 22,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for a product with multiple reviews",
+              "line": 23,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see the average rating displayed (e.g., 4.5 out of 5 stars)",
+              "line": 24,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-4-filtering-reviews-by-rating",
+          "keyword": "Scenario",
+          "name": "Filtering reviews by rating",
+          "description": "",
+          "line": 26,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page with multiple reviews",
+              "line": 27,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I select to filter reviews by \"5 stars\"",
+              "line": 28,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should only see reviews with a 5-star rating",
+              "line": 29,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-5.feature",
+      "id": "feature-5-checkout-process-shipping-information",
+      "keyword": "Feature",
+      "name": "Checkout Process - Shipping Information",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-proceeding-to-shipping-information-as-a-logged-in-user",
+          "keyword": "Scenario",
+          "name": "Proceeding to shipping information as a logged-in user",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am logged in and have items in my cart",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I proceed to checkout",
+              "line": 5,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should be on the shipping information page",
+              "line": 6,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "my default shipping address should be pre-filled (if available)",
+              "line": 7,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-entering-new-shipping-address",
+          "keyword": "Scenario",
+          "name": "Entering new shipping address",
+          "description": "",
+          "line": 9,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the shipping information page",
+              "line": 10,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter my name \"John Doe\"",
+              "line": 11,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter my address \"123 Main St\"",
+              "line": 12,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter my city \"Anytown\"",
+              "line": 13,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I select \"California\" as the state",
+              "line": 14,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter my zip code \"90210\"",
+              "line": 15,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Continue to Payment\"",
+              "line": 16,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "my entered shipping information should be saved for this order",
+              "line": 17,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-5.feature",
+      "id": "feature-5-checkout-process-payment-method",
+      "keyword": "Feature",
+      "name": "Checkout Process - Payment Method",
+      "description": "",
+      "line": 19,
+      "elements": [
+        {
+          "id": "scenario-0-selecting-a-payment-method",
+          "keyword": "Scenario",
+          "name": "Selecting a payment method",
+          "description": "",
+          "line": 21,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have entered my shipping information",
+              "line": 22,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I proceed to the payment method page",
+              "line": 23,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a list of available payment methods (e.g., Credit Card, PayPal)",
+              "line": 24,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I select \"Credit Card\"",
+              "line": 25,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see fields to enter my credit card details",
+              "line": 26,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-entering-valid-credit-card-details",
+          "keyword": "Scenario",
+          "name": "Entering valid credit card details",
+          "description": "",
+          "line": 28,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have selected \"Credit Card\" as my payment method",
+              "line": 29,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter a valid card number \"1234567890123456\"",
+              "line": 30,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter the expiry date \"12/25\"",
+              "line": 31,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter the CVV \"123\"",
+              "line": 32,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Place Order\"",
+              "line": 33,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "my order should be successfully placed (assuming other validations pass)",
+              "line": 34,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-5.feature",
+      "id": "feature-5-checkout-process-order-confirmation",
+      "keyword": "Feature",
+      "name": "Checkout Process - Order Confirmation",
+      "description": "",
+      "line": 36,
+      "elements": [
+        {
+          "id": "scenario-0-viewing-order-confirmation",
+          "keyword": "Scenario",
+          "name": "Viewing order confirmation",
+          "description": "",
+          "line": 38,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have successfully placed an order",
+              "line": 39,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should be redirected to the order confirmation page",
+              "line": 40,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see my order number",
+              "line": 41,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see a summary of the items ordered",
+              "line": 42,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see the shipping address and billing information",
+              "line": 43,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-receiving-an-order-confirmation-email",
+          "keyword": "Scenario",
+          "name": "Receiving an order confirmation email",
+          "description": "",
+          "line": 45,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I have successfully placed an order",
+              "line": 46,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should receive an order confirmation email at my registered email address",
+              "line": 47,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "the email should contain my order details",
+              "line": 48,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-6.feature",
+      "id": "feature-6-product-reviews",
+      "keyword": "Feature",
+      "name": "Product Reviews",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-viewing-existing-product-reviews",
+          "keyword": "Scenario",
+          "name": "Viewing existing product reviews",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"Electric Kettle\"",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a section displaying customer reviews and their ratings",
+              "line": 5,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-submitting-a-product-review-as-a-logged-in-user",
+          "keyword": "Scenario",
+          "name": "Submitting a product review as a logged-in user",
+          "description": "",
+          "line": 7,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am logged in and on the product detail page for \"Travel Backpack\"",
+              "line": 8,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter a review text \"Great backpack for travel!\"",
+              "line": 9,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I select a rating of 5 stars",
+              "line": 10,
+              "result": {
+                "status": "skipped"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Submit Review\"",
+              "line": 11,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "my review should be displayed on the product detail page",
+              "line": 12,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "my username should be associated with the review",
+              "line": 13,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-attempting-to-submit-a-review-without-a-rating",
+          "keyword": "Scenario",
+          "name": "Attempting to submit a review without a rating",
+          "description": "",
+          "line": 15,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am logged in and on the product detail page for a product",
+              "line": 16,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter a review text",
+              "line": 17,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I do not select a rating",
+              "line": 18,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Submit Review\"",
+              "line": 19,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message asking me to provide a rating",
+              "line": 20,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-3-viewing-the-average-product-rating",
+          "keyword": "Scenario",
+          "name": "Viewing the average product rating",
+          "description": "",
+          "line": 22,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for a product with multiple reviews",
+              "line": 23,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see the average rating displayed (e.g., 4.5 out of 5 stars)",
+              "line": 24,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-4-filtering-reviews-by-rating",
+          "keyword": "Scenario",
+          "name": "Filtering reviews by rating",
+          "description": "",
+          "line": 26,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page with multiple reviews",
+              "line": 27,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I select to filter reviews by \"5 stars\"",
+              "line": 28,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should only see reviews with a 5-star rating",
+              "line": 29,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-7.feature",
+      "id": "feature-7-order-history",
+      "keyword": "Feature",
+      "name": "Order History",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-viewing-order-history-as-a-logged-in-user",
+          "keyword": "Scenario",
+          "name": "Viewing order history as a logged-in user",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am logged in",
+              "line": 4,
+              "result": {
+                "status": "failed",
+                "error_message": "Connection refused"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I navigate to the \"Order History\" page",
+              "line": 5,
+              "result": {
+                "status": "skipped"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a list of my past orders",
+              "line": 6,
+              "result": {
+                "status": "skipped",
+                "error_message": "Timeout waiting for text to appear"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "each order should display the order number, date, and status",
+              "line": 7,
+              "result": {
+                "status": "skipped"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-viewing-details-of-a-specific-order",
+          "keyword": "Scenario",
+          "name": "Viewing details of a specific order",
+          "description": "",
+          "line": 9,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Order History\" page",
+              "line": 10,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click on an order with number \"12345\"",
+              "line": 11,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see the details of order \"12345\"",
+              "line": 12,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-checking-the-shipping-status-of-an-order",
+          "keyword": "Scenario",
+          "name": "Checking the shipping status of an order",
+          "description": "",
+          "line": 15,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am viewing the details of an order that has been shipped",
+              "line": 16,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see the current shipping status (e.g., \"Shipped,\" \"Out for Delivery,\" \"Delivered\")",
+              "line": 17,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see a tracking number or link to track the shipment",
+              "line": 18,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-3-reordering-a-previously-placed-order",
+          "keyword": "Scenario",
+          "name": "Reordering a previously placed order",
+          "description": "",
+          "line": 20,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am viewing the details of a completed order",
+              "line": 21,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click the \"Reorder\" button",
+              "line": 22,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "all the items from that order should be added to my shopping cart",
+              "line": 23,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-4-filtering-order-history-by-date-range",
+          "keyword": "Scenario",
+          "name": "Filtering order history by date range",
+          "description": "",
+          "line": 25,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the \"Order History\" page",
+              "line": 26,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I select a start date \"01/01/2025\" and an end date \"03/31/2025\"",
+              "line": 27,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click \"Apply Filter\"",
+              "line": 28,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should only see orders placed within that date range",
+              "line": 29,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-8.feature",
+      "id": "feature-8-user-registration",
+      "keyword": "Feature",
+      "name": "User Registration",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-successful-user-registration",
+          "keyword": "Scenario",
+          "name": "Successful user registration",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the registration page",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter a unique email \"newuser@example.com\"",
+              "line": 5,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a password \"password123\"",
+              "line": 6,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I confirm the password \"password123\"",
+              "line": 7,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Register\" button",
+              "line": 8,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should be redirected to my account dashboard",
+              "line": 9,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see a success message",
+              "line": 10,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-attempting-to-register-with-an-existing-email",
+          "keyword": "Scenario",
+          "name": "Attempting to register with an existing email",
+          "description": "",
+          "line": 12,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the registration page",
+              "line": 13,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter an already registered email \"existinguser@example.com\"",
+              "line": 14,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a password \"anotherpassword\"",
+              "line": 15,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I confirm the password \"anotherpassword\"",
+              "line": 16,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Register\" button",
+              "line": 17,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message indicating that the email is already in use",
+              "line": 18,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-password-mismatch-during-registration",
+          "keyword": "Scenario",
+          "name": "Password mismatch during registration",
+          "description": "",
+          "line": 20,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the registration page",
+              "line": 21,
+              "result": {
+                "status": "failed",
+                "error_message": "Expected 'success' but got 'error'"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter an email \"testuser@example.com\"",
+              "line": 22,
+              "result": {
+                "status": "failed",
+                "error_message": "Cannot focus on input element"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a password \"secure1\"",
+              "line": 23,
+              "result": {
+                "status": "skipped",
+                "error_message": "Cannot focus on input element"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter a different password \"secure2\" in the confirm password field",
+              "line": 24,
+              "result": {
+                "status": "failed",
+                "error_message": "Cannot focus on input element"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Register\" button",
+              "line": 25,
+              "result": {
+                "status": "failed",
+                "error_message": "Unexpected alert prevented click operation"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message indicating that the passwords do not match",
+              "line": 26,
+              "result": {
+                "status": "skipped",
+                "error_message": "Element was present but not visible"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-8.feature",
+      "id": "feature-8-user-login",
+      "keyword": "Feature",
+      "name": "User Login",
+      "description": "",
+      "line": 28,
+      "elements": [
+        {
+          "id": "scenario-0-successful-user-login",
+          "keyword": "Scenario",
+          "name": "Successful user login",
+          "description": "",
+          "line": 30,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the login page",
+              "line": 31,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter my registered email \"existinguser@example.com\"",
+              "line": 32,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter my correct password \"correctpassword\"",
+              "line": 33,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Login\" button",
+              "line": 34,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should be redirected to my account dashboard",
+              "line": 35,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see a personalized greeting",
+              "line": 36,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-attempting-to-login-with-an-incorrect-password",
+          "keyword": "Scenario",
+          "name": "Attempting to login with an incorrect password",
+          "description": "",
+          "line": 38,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the login page",
+              "line": 39,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter my registered email \"existinguser@example.com\"",
+              "line": 40,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter an incorrect password \"wrongpassword\"",
+              "line": 41,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Login\" button",
+              "line": 42,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message indicating invalid credentials",
+              "line": 43,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-attempting-to-login-with-an-unregistered-email",
+          "keyword": "Scenario",
+          "name": "Attempting to login with an unregistered email",
+          "description": "",
+          "line": 45,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the login page",
+              "line": 46,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I enter an unregistered email \"nonexistent@example.com\"",
+              "line": 47,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I enter any password",
+              "line": 48,
+              "result": {
+                "status": "failed",
+                "error_message": "Cannot focus on input element"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I click the \"Login\" button",
+              "line": 49,
+              "result": {
+                "status": "skipped"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see an error message indicating invalid credentials",
+              "line": 50,
+              "result": {
+                "status": "skipped"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uri": "feature-file-9.feature",
+      "id": "feature-9-product-detail-page",
+      "keyword": "Feature",
+      "name": "Product Detail Page",
+      "description": "",
+      "line": 1,
+      "elements": [
+        {
+          "id": "scenario-0-viewing-product-name-and-price",
+          "keyword": "Scenario",
+          "name": "Viewing product name and price",
+          "description": "",
+          "line": 3,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"Organic Cotton T-shirt\"",
+              "line": 4,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see the product name \"Organic Cotton T-shirt\"",
+              "line": 5,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I should see the product price",
+              "line": 6,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-1-viewing-product-description",
+          "keyword": "Scenario",
+          "name": "Viewing product description",
+          "description": "",
+          "line": 8,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"High-Performance Laptop\"",
+              "line": 9,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a detailed description of the laptop's features",
+              "line": 10,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-2-checking-product-availability",
+          "keyword": "Scenario",
+          "name": "Checking product availability",
+          "description": "",
+          "line": 12,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"Limited Edition Sneakers\"",
+              "line": 13,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see the current stock availability (e.g., \"In Stock,\" \"Out of Stock\")",
+              "line": 14,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-3-viewing-product-images",
+          "keyword": "Scenario",
+          "name": "Viewing product images",
+          "description": "",
+          "line": 16,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"Leather Handbag\"",
+              "line": 17,
+              "result": {
+                "status": "failed",
+                "error_message": "Element is not clickable at point (X, Y)"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see multiple images showcasing the handbag from different angles",
+              "line": 18,
+              "result": {
+                "status": "skipped"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-4-viewing-customer-reviews",
+          "keyword": "Scenario",
+          "name": "Viewing customer reviews",
+          "description": "",
+          "line": 20,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"Popular Novel\"",
+              "line": 21,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a section displaying customer reviews and ratings",
+              "line": 22,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-5-selecting-product-options-e-g-size-color",
+          "keyword": "Scenario",
+          "name": "Selecting product options (e.g., size, color)",
+          "description": "",
+          "line": 24,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for \"Customizable Mug\"",
+              "line": 25,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I select \"Blue\" as the color",
+              "line": 26,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "I select \"12 oz\" as the size",
+              "line": 27,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "the displayed product image might update to show a blue 12 oz mug",
+              "line": 28,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "the price might update if options affect the cost",
+              "line": 29,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scenario-6-attempting-to-add-an-out-of-stock-product-to-the-cart",
+          "keyword": "Scenario",
+          "name": "Attempting to add an out-of-stock product to the cart",
+          "description": "",
+          "line": 31,
+          "type": "scenario",
+          "steps": [
+            {
+              "keyword": "Given ",
+              "name": "I am on the product detail page for an \"Out of Stock\" item",
+              "line": 32,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "When ",
+              "name": "I click the \"Add to Cart\" button",
+              "line": 33,
+              "result": {
+                "status": "undefined"
+              }
+            },
+            {
+              "keyword": "Then ",
+              "name": "I should see a message indicating that the product is out of stock",
+              "line": 34,
+              "result": {
+                "status": "passed"
+              }
+            },
+            {
+              "keyword": "And ",
+              "name": "the product should not be added to my shopping cart",
+              "line": 35,
+              "result": {
+                "status": "passed"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

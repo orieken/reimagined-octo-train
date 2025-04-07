@@ -1,72 +1,91 @@
-"""
-API routes for querying test data
-"""
-from typing import Dict, Optional
+# app/api/routes/query.py
 from fastapi import APIRouter, Depends, HTTPException, Query as QueryParam
+from typing import List, Dict, Any, Optional
+import logging
+from datetime import datetime
 
-from app.models.api import QueryRequest, QueryResponse
-from app.models.domain import QueryResult
-from app.config import get_settings, Settings
-from app.services.llm import LLMService
-from app.api.dependencies import get_llm_service, get_generator_service, get_retrieval_service
-from app.core.rag.retrieval import RetrievalService
-from app.core.rag.generator import GeneratorService
+from app.config import settings
+from app.services.orchestrator import ServiceOrchestrator
+from app.api.dependencies import get_orchestrator_service
+from app.models.domain import SearchQuery
 
-router = APIRouter()
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix=settings.API_PREFIX, tags=["query"])
 
 
-@router.post("", response_model=QueryResponse)
-async def query_test_data(
-        request_data: QueryRequest,
-        llm_service: LLMService = Depends(get_llm_service),
-        retrieval_service: RetrievalService = Depends(get_retrieval_service),
-        generator_service: GeneratorService = Depends(get_generator_service),
-        settings: Settings = Depends(get_settings)
+@router.post("/query", response_model=Dict[str, Any])
+async def query_data(
+        query: str,
+        filters: Optional[Dict[str, Any]] = None,
+        limit: int = QueryParam(10, description="Maximum number of results to return"),
+        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
 ):
     """
-    Query test data using natural language
+    Query the vector database using natural language.
 
-    Uses RAG pipeline to generate a response based on test data
+    This endpoint allows querying the vector database using natural language,
+    and returns the most relevant results.
     """
     try:
-        # In Phase 1, we return a mock response
-        # This will be replaced with actual RAG pipeline in Phase 3
+        logger.info(f"Query request: {query}")
 
-        # Mock embedding generation
-        query_embedding = await llm_service.generate_embedding(request_data.query)
-
-        # Mock retrieval (empty in Phase 1)
-        filters = {}
-        if request_data.test_run_id:
-            filters["test_run_id"] = request_data.test_run_id
-        if request_data.build_id:
-            filters["build_id"] = request_data.build_id
-        if request_data.tags:
-            filters["tags"] = request_data.tags
-
-        results = await retrieval_service.retrieve(query_embedding, filters)
-
-        # Format context from results (empty in Phase 1)
-        context = retrieval_service.format_context(results)
-
-        # Generate response
-        generation_result = await generator_service.generate(
-            query=request_data.query,
-            context=context
+        # Create a search query
+        search_query = SearchQuery(
+            query=query,
+            filters=filters or {},
+            limit=limit
         )
 
-        # Create response
-        query_result = QueryResult(
-            answer=generation_result["answer"],
-            confidence=generation_result["confidence"],
-            sources=[],  # Empty in Phase 1
-            metadata={}
-        )
+        # Perform the search
+        search_results = await orchestrator.search(search_query)
 
-        return {"result": query_result}
-
+        return {
+            "query": query,
+            "results": search_results.results,
+            "total_hits": search_results.total_hits,
+            "execution_time_ms": search_results.execution_time_ms,
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
+        logger.error(f"Query error: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to process query: {str(e)}"
+            detail=f"Query failed: {str(e)}"
+        )
+
+
+@router.post("/answer", response_model=Dict[str, Any])
+async def generate_answer(
+        query: str,
+        context: Optional[List[Dict[str, Any]]] = None,
+        max_tokens: int = QueryParam(800, description="Maximum tokens to generate"),
+        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
+):
+    """
+    Generate an answer to a natural language query.
+
+    This endpoint uses the LLM to generate an answer based on the provided
+    query and optional context.
+    """
+    try:
+        logger.info(f"Answer request: {query}")
+
+        # Generate the answer
+        answer = await orchestrator.generate_answer(
+            query=query,
+            context=context,
+            max_tokens=max_tokens
+        )
+
+        return {
+            "query": query,
+            "answer": answer,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Answer generation error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate answer: {str(e)}"
         )

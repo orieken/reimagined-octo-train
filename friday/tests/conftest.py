@@ -15,6 +15,52 @@ from app.core.rag.embeddings import EmbeddingService
 from app.services.llm import LLMService
 from app.services.vector_db import VectorDBService
 
+import pytest
+from httpx import AsyncClient
+from app.main import app  # Import your FastAPI application
+
+
+@pytest.fixture
+async def test_client():
+    """
+    Async test client for making requests to the application.
+
+    This fixture creates an async test client that can be used
+    to make requests to your FastAPI routes during testing.
+    """
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        yield client
+
+
+@pytest.fixture
+def mock_data():
+    """
+    Fixture to provide mock test data for consistent testing.
+
+    This can be expanded to load data from a JSON file or generate
+    dynamic test data for each test run.
+    """
+    return {
+        "projects": [
+            {
+                "id": "project-1",
+                "name": "Test Project",
+                "description": "Sample project for testing"
+            }
+        ],
+        "test_runs": [
+            {
+                "id": "test-run-1",
+                "project_id": "project-1",
+                "name": "Sample Test Run",
+                "status": "PASSED",
+                "total_tests": 10,
+                "passed_tests": 8,
+                "failed_tests": 2
+            }
+        ]
+    }
+
 
 @pytest.fixture
 def sample_cucumber_report() -> Dict[str, Any]:

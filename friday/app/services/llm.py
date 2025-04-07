@@ -67,38 +67,36 @@ class LLMService:
             raise ValueError("Cannot generate embedding for empty text")
 
         try:
-            headers = {}
-            if self.api_key:
-                headers["Authorization"] = f"Bearer {self.api_key}"
-
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/api/embeddings",
                     json={
                         "model": self.model,
                         "prompt": text
-                    },
-                    headers=headers
+                    }
                 )
 
                 if response.status_code != 200:
-                    logger.error("Embedding generation failed: %s", response.text)
                     raise LLMServiceException(f"Failed to generate embedding: {response.text}")
 
                 result = response.json()
                 embedding = result.get("embedding")
 
                 if not embedding:
-                    logger.error("No embedding returned in response")
                     raise LLMServiceException("No embedding returned in response")
 
+                # Normalize embedding to 384 dimensions
+                if len(embedding) > 1536:
+                    embedding = embedding[:1536]  # Truncate
+                elif len(embedding) < 1536:
+                    # Pad with zeros
+                    embedding.extend([0] * (1536 - len(embedding)))
+
                 return embedding
-        except httpx.HTTPError as e:
-            logger.error("HTTP error when generating embedding: %s", str(e))
-            raise
+
         except Exception as e:
-            logger.error("Error generating embedding: %s", str(e))
-            raise LLMServiceException(f"Error generating embedding: {str(e)}")
+            logger.error(f"Error generating embedding: {str(e)}")
+            raise
 
     @retry(
         stop=stop_after_attempt(3),
