@@ -9,17 +9,13 @@ from pydantic import BaseModel, Field, validator, root_validator
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
-from app.models.domain import (
-    TestRun as Report, Scenario as TestCase, Step as TestStep,
-    Feature, BuildInfo, TextChunk
-)
-from app.models.api import (
-    ReportResponse, ErrorResponse, SuccessResponse,
-    TestResultsResponse, ProcessingStatusResponse
+
+from app.models import(
+    ReportResponse, SuccessResponse, BuildInfo, ProcessingStatusResponse, Report, TestStep,
+    TestCase, TextChunk, ProcessReportResponse  # Added ProcessReportResponse import
 )
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix=settings.API_PREFIX, tags=["processor"])
 
 
@@ -132,7 +128,7 @@ class CucumberReportRequest(BaseModel):
         return values
 
 
-@router.post("/processor/cucumber", response_model=ReportResponse)
+@router.post("/processor/cucumber", response_model=ProcessReportResponse)  # Changed to ProcessReportResponse
 async def process_cucumber_report(
         report_request: CucumberReportRequest,
         background_tasks: BackgroundTasks,
@@ -198,7 +194,7 @@ async def process_cucumber_report(
                 task_id=task_id
             )
 
-            return ReportResponse(
+            return ProcessReportResponse(  # Changed to ProcessReportResponse
                 status="accepted",
                 message=f"Report processing started for {metadata['project']} ({metadata['branch']})",
                 report_id=test_run.id,
@@ -207,7 +203,7 @@ async def process_cucumber_report(
             )
         else:
             report_id = await orchestrator.process_report(test_run)
-            return ReportResponse(
+            return ProcessReportResponse(  # Changed to ProcessReportResponse
                 status="success",
                 message=f"Report processed successfully for {metadata['project']} ({metadata['branch']})",
                 report_id=report_id,

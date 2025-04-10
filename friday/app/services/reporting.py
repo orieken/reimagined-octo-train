@@ -16,10 +16,9 @@ from enum import Enum
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.services.analytics import AnalyticsService
-from app.models.api import (
-    ReportTemplate, ReportSchedule, Report, ReportFormat,
-    ReportStatus, ReportType, ReportSubscription
-)
+
+from app.models import ReportStatus, ReportType, Report
+from app.models.schemas import ReportTemplate, ReportSchedule
 
 logger = logging.getLogger(__name__)
 

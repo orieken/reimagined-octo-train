@@ -10,11 +10,10 @@ import uuid
 
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
-from app.models.api import (
-    TestFlakiness, TrendAnalysis, TrendPoint,
-    FailureCorrelation, PerformanceMetrics, PerformanceTestData,
-    AnalyticsResponse
-)
+
+from app.models import TrendAnalysis
+from app.models.schemas import TestFlakiness, TrendPoint, FailureCorrelation, PerformanceMetrics, \
+    PerformanceTestData, AnalyticsResponse
 
 logger = logging.getLogger(__name__)
 

@@ -9,8 +9,7 @@ from app.services.analytics_service import get_test_failure_metrics, calculate_b
 
 from app.database.dependencies import get_db
 
-from app.models.database import Project, TestCase, BuildMetric, TestReport
-from app.models.domain import Report
+from app.models.database import Project, BuildMetric, TestCase, Report
 
 # from app.database.models import TestReport, TestCase, BuildMetric
 

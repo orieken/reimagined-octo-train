@@ -57,6 +57,8 @@ const TestResultsDashboard = () => {
   }
 
   const skippedTests = testData.skippedTests || testData.featureResults?.reduce((sum, feature) => sum + (feature.skipped || 0), 0) || 0;
+  console.log('Skipped Tests:', skippedTests);
+  console.log('test data by tags', testData.tags);
 
   return (
     <div className="space-y-6">

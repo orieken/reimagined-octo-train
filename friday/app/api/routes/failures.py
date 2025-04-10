@@ -8,10 +8,7 @@ import uuid
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
-from app.models.domain import (
-    TestRun as Report, Scenario as TestCase, Step as TestStep,
-    TestStatus
-)
+
 
 logger = logging.getLogger(__name__)
 

@@ -7,17 +7,18 @@ from datetime import datetime
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
-from app.models.domain import SearchQuery
+
+from app.models import SearchQuery
+from app.models.search_analysis import QueryFilter
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix=settings.API_PREFIX, tags=["query"])
 
 
 @router.post("/query", response_model=Dict[str, Any])
 async def query_data(
         query: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: List[QueryFilter] = None,
         limit: int = QueryParam(10, description="Maximum number of results to return"),
         orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
 ):

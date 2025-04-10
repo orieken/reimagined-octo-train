@@ -109,6 +109,8 @@ export const adaptTestTrends = (apiResponse) => {
   }
 
   const trends = apiResponse.trends;
+  console.log({ trends });
+  console.log('trends daily', trends.daily );
 
   // Process daily trends
   const dailyTrends = (trends.daily || []).map(day => ({

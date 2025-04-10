@@ -8,15 +8,11 @@ import uuid
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
-from app.models.domain import (
-    TestRun as Report, Scenario as TestCase, Step as TestStep,
-    TestStatus
-)
-from app.models.api import (
-    ErrorResponse, TestResultsResponse, FeatureResult, TestResultsTag,
-    TestResultsListResponse, TestCaseListResponse, StatisticsResponse,
-    ScenarioResult, StepResult
-)
+
+from app.models.database import TestResultsTag
+from app.models.responses import (TestResultsListResponse, TestResultsResponse, TestCaseListResponse,
+                                  ScenarioResult, StatisticsResponse, StepResult
+                                  )
 
 logger = logging.getLogger(__name__)
 

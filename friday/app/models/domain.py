@@ -1,196 +1,296 @@
-# src/models/domain.py
+# domain.py
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
-from enum import Enum
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 import uuid
 
-
-class TestStatus(str, Enum):
-    """Enum for test execution status."""
-    PASSED = "PASSED"
-    FAILED = "FAILED"
-    SKIPPED = "SKIPPED"
-    PENDING = "PENDING"
-    BROKEN = "BROKEN"
-    UNDEFINED = "UNDEFINED"
-
-
-class ChunkMetadata(BaseModel):
-    """Metadata for a text chunk."""
-    source: Optional[str] = None
-    source_id: Optional[str] = None
-    chunk_index: Optional[int] = None
-    document_type: Optional[str] = None
-    context: Dict[str, Any] = Field(default_factory=dict)
-
-
-class TextChunk(BaseModel):
-    """Model representing a chunk of text with metadata."""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    text: str
-    metadata: ChunkMetadata = Field(default_factory=ChunkMetadata)
-    chunk_size: Optional[int] = None
-
-
-class TextEmbedding(BaseModel):
-    """Model representing a text embedding vector."""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    vector: List[float]
-    text_chunk_id: str
-    model: Optional[str] = None
+from .base import (
+    TestStatus,
+    BuildEnvironment,
+    Tag
+)
 
 
 class BuildInfo(BaseModel):
-    """Information about a build."""
+    """Comprehensive build information model."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     build_number: str
-    build_url: Optional[str] = None
+    project: Optional[str] = None
+    repository: Optional[str] = None
     branch: Optional[str] = None
     commit: Optional[str] = None
-    date: Optional[str] = None
-    duration: Optional[int] = None
+
+    # Build metadata
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    duration: Optional[float] = None  # in seconds
+
+    # Build context
+    environment: Optional[BuildEnvironment] = None
     status: Optional[str] = None
-    environment: Optional[str] = None
+
+    # Additional metadata
+    ci_url: Optional[str] = None
+    artifacts_url: Optional[str] = None
     version: Optional[str] = None
-    team: Optional[str] = None
-    project: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    # Extra context
+    author: Optional[str] = None
+    commit_message: Optional[str] = None
+
+    # Flexible metadata
+    extra_info: Dict[str, Any] = Field(default_factory=dict)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "build_number": "1.2.3-RC1",
+                "project": "test-automation",
+                "branch": "main",
+                "commit": "abc123def456",
+                "environment": "staging",
+                "status": "completed"
+            }
+        }
+    )
+
+    def is_successful(self) -> bool:
+        """Determine if the build was successful."""
+        return self.status in ['completed', 'success']
+
+    def get_build_duration(self) -> Optional[float]:
+        """Calculate build duration if start and end times are available."""
+        if self.start_time and self.end_time:
+            return (self.end_time - self.start_time).total_seconds()
+        return self.duration
 
 
 class Step(BaseModel):
-    """Model representing a test step in a Cucumber scenario."""
+    """Model representing a test step."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    keyword: str  # Given, When, Then, And, But
+    keyword: str
     name: str
     status: TestStatus
     error_message: Optional[str] = None
-    duration: Optional[float] = None  # in milliseconds
-    screenshot: Optional[str] = None  # path or URL to a screenshot if available
-    logs: Optional[List[str]] = None  # relevant log entries
+    stack_trace: Optional[str] = None
+    duration: Optional[float] = None
+    screenshot: Optional[str] = None
+    logs: Optional[List[str]] = None
+    embeddings: Optional[List[float]] = None  # Added embeddings field
 
     class Config:
         use_enum_values = True
+        json_schema_extra = {
+            "example": {
+                "id": "step-123",
+                "keyword": "When",
+                "name": "User logs in",
+                "status": "PASSED",
+                "duration": 250.5,
+                "embeddings": [0.1, 0.2, 0.3]  # Example embedding vector
+            }
+        }
+
+    def is_failed(self) -> bool:
+        """Check if the step failed."""
+        return self.status in [TestStatus.FAILED, TestStatus.ERROR]
+
+    def get_duration(self) -> Optional[float]:
+        """Calculate step duration."""
+        if self.start_time and self.end_time:
+            return (self.end_time - self.start_time).total_seconds() * 1000
+        return self.duration
 
 
 class Scenario(BaseModel):
-    """Model representing a test case (Cucumber Scenario)."""
+    """Model representing a test scenario."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: Optional[str] = None
     status: TestStatus
+    feature: str
+    feature_file: Optional[str] = None  # Added feature_file
     tags: List[str] = Field(default_factory=list)
-    feature: str  # The feature this test case belongs to
-    duration: Optional[float] = None  # in milliseconds
+    duration: Optional[float] = None
     steps: List[Step] = Field(default_factory=list)
     error_message: Optional[str] = None
-    retries: int = 0  # Number of retries if the test failed
+    retries: int = 0
+    is_flaky: bool = False  # Added is_flaky
+    embeddings: Optional[List[float]] = None  # Added embeddings
 
     class Config:
         use_enum_values = True
+        json_schema_extra = {
+            "example": {
+                "id": "scenario-123",
+                "name": "User Login Scenario",
+                "status": "PASSED",
+                "feature": "Authentication",
+                "feature_file": "/path/to/login.feature",
+                "tags": ["smoke", "login"],
+                "duration": 1500.5,
+                "is_flaky": False,
+                "embeddings": [0.1, 0.2, 0.3]
+            }
+        }
+
+    def is_failed(self) -> bool:
+        """Check if the scenario failed."""
+        return self.status in [TestStatus.FAILED, TestStatus.ERROR]
+
+    def get_failed_steps(self) -> List[Step]:
+        """Retrieve all failed steps in the scenario."""
+        return [step for step in self.steps if step.status in [TestStatus.FAILED, TestStatus.ERROR]]
+
+    def calculate_status(self) -> TestStatus:
+        """Calculate overall scenario status based on steps."""
+        if not self.steps:
+            return self.status
+
+        step_statuses = [step.status for step in self.steps]
+
+        if any(status == TestStatus.FAILED for status in step_statuses):
+            return TestStatus.FAILED
+        if any(status == TestStatus.ERROR for status in step_statuses):
+            return TestStatus.ERROR
+        if all(status == TestStatus.PASSED for status in step_statuses):
+            return TestStatus.PASSED
+
+        return TestStatus.UNDEFINED
+
+    def get_total_duration(self) -> Optional[float]:
+        """Calculate total duration of steps."""
+        step_durations = [step.duration or 0 for step in self.steps]
+        return sum(step_durations) if step_durations else self.duration
 
 
 class TestRun(BaseModel):
-    """Model representing a test execution report."""
+    """Comprehensive test run model."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+
+    # Run identification
     name: str
-    status: str  # Overall status (e.g., "PASSED", "FAILED")
-    timestamp: str
-    duration: float  # in milliseconds
-    environment: str  # e.g., "production", "staging", "dev"
-    tags: List[str] = Field(default_factory=list)
+    description: Optional[str] = None
+
+    # Execution context
+    timestamp: datetime = Field(default_factory=datetime.now)
+    environment: str
+
+    # Run details
+    status: TestStatus
+    duration: float  # Total run duration in milliseconds
+
+    # Scenarios
     scenarios: List[Scenario] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)  # Additional metadata
+
+    # Metadata
+    tags: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "Nightly Regression Test",
+                "environment": "staging",
+                "status": "COMPLETED",
+                "scenarios": []
+            }
+        }
+    )
 
     def get_statistics(self) -> Dict[str, Any]:
-        """Calculate statistics for the report."""
-        total_tests = len(self.scenarios)
+        """Generate comprehensive test run statistics."""
+        total_scenarios = len(self.scenarios)
 
-        # Initialize counters for each status
-        status_counts = {status.value: 0 for status in TestStatus}
-
-        # Count tests by status
-        for test in self.scenarios:
-            status_counts[test.status] = status_counts.get(test.status, 0) + 1
+        # Count scenarios by status
+        status_counts = {}
+        for status in TestStatus:
+            status_counts[status.value] = sum(
+                1 for scenario in self.scenarios if scenario.status == status
+            )
 
         # Calculate pass rate
-        pass_rate = (status_counts.get(TestStatus.PASSED.value, 0) / total_tests * 100) if total_tests > 0 else 0
-
-        # Calculate average duration
-        total_duration = sum(tc.duration or 0 for tc in self.scenarios)
-        avg_duration = total_duration / total_tests if total_tests > 0 else 0
+        pass_rate = (
+                    status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100) if total_scenarios > 0 else 0
 
         return {
-            "total_tests": total_tests,
+            "total_scenarios": total_scenarios,
             "status_counts": status_counts,
-            "pass_rate": pass_rate,
-            "total_duration": total_duration,
-            "average_duration": avg_duration
+            "pass_rate": round(pass_rate, 2),
+            "total_duration": sum(scenario.duration or 0 for scenario in self.scenarios),
+            "average_scenario_duration": sum(
+                scenario.duration or 0 for scenario in self.scenarios) / total_scenarios if total_scenarios > 0 else 0
         }
 
-    def get_failing_tests(self) -> List[Scenario]:
-        """Return a list of failing test cases."""
-        return [tc for tc in self.scenarios if tc.status == TestStatus.FAILED.value]
+    def get_failing_scenarios(self) -> List[Scenario]:
+        """Retrieve scenarios that failed."""
+        return [
+            scenario for scenario in self.scenarios
+            if scenario.status in [TestStatus.FAILED, TestStatus.ERROR]
+        ]
 
-    def get_flaky_tests(self) -> List[Scenario]:
-        """Return a list of potentially flaky test cases (tests with retries)."""
-        return [tc for tc in self.scenarios if tc.retries > 0]
+    def get_flaky_scenarios(self) -> List[Scenario]:
+        """Retrieve scenarios with retries."""
+        return [scenario for scenario in self.scenarios if scenario.retries > 0]
 
 
 class Feature(BaseModel):
-    """Model representing a Cucumber feature."""
+    """Detailed feature model."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+
+    # Feature identification
     name: str
     description: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
+
+    # Feature context
+    file_path: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+
+    # Scenarios and relationships
     scenarios: List[Scenario] = Field(default_factory=list)
+
+    # Metadata
+    tags: List[str] = Field(default_factory=list)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "User Authentication",
+                "file_path": "features/auth.feature",
+                "priority": "high",
+                "scenarios": []
+            }
+        }
+    )
+
+    def get_feature_statistics(self) -> Dict[str, Any]:
+        """Generate comprehensive feature statistics."""
+        total_scenarios = len(self.scenarios)
+
+        # Count scenarios by status
+        status_counts = {}
+        for status in TestStatus:
+            status_counts[status.value] = sum(
+                1 for scenario in self.scenarios if scenario.status == status
+            )
+
+        # Calculate pass rate
+        pass_rate = (
+                    status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100) if total_scenarios > 0 else 0
+
+        return {
+            "total_scenarios": total_scenarios,
+            "status_counts": status_counts,
+            "pass_rate": round(pass_rate, 2)
+        }
+
+    def get_scenarios_by_tag(self, tag: str) -> List[Scenario]:
+        """Retrieve scenarios with a specific tag."""
+        return [scenario for scenario in self.scenarios if tag in scenario.tags]
 
 
 # Aliases for backward compatibility
 TestCase = Scenario
 TestStep = Step
 Report = TestRun
-
-
-class QueryResult(BaseModel):
-    """Result of a query against the vector database."""
-    id: str
-    score: float
-    type: str  # report, test_case, test_step, feature, build_info
-    content: Dict[str, Any]
-
-
-class AnalysisRequest(BaseModel):
-    """Model for requesting an analysis of a test report or test case."""
-    report_id: Optional[str] = None
-    test_case_id: Optional[str] = None
-    query: str
-    max_results: int = 10
-
-
-class AnalysisResult(BaseModel):
-    """Model for the result of an analysis."""
-    query: str
-    timestamp: datetime = Field(default_factory=datetime.now)
-    recommendations: List[str] = Field(default_factory=list)
-    related_items: List[Dict[str, Any]] = Field(default_factory=list)
-    summary: str
-
-
-class SearchQuery(BaseModel):
-    """Model for a search query."""
-    query: str
-    filters: Dict[str, Any] = Field(default_factory=dict)
-    limit: int = 10
-
-
-class SearchResults(BaseModel):
-    """Model for search results."""
-    query: str
-    results: List[Dict[str, Any]] = Field(default_factory=list)
-    total_hits: int = 0
-    execution_time_ms: float = 0
-
-
-# Make sure the forward reference is resolved
-Feature.update_forward_refs()

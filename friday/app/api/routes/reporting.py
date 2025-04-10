@@ -11,11 +11,9 @@ from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.services.reporting import ReportingService
 from app.api.dependencies import get_orchestrator_service
-from app.models.api import (
-    ErrorResponse, ReportTemplate, ReportSchedule, Report,
-    ReportFormat, ReportStatus, ReportType, CreateReportRequest,
-    CreateScheduleRequest
-)
+
+from app.models import Report
+from app.models.schemas import CreateScheduleRequest, CreateReportRequest, ReportTemplate, ReportSchedule
 
 logger = logging.getLogger(__name__)
 

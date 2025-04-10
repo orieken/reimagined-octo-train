@@ -10,6 +10,7 @@ tenacity
 rich
 pandas
 matplotlib
+asyncpg
 
 pydantic-settings
 sqlalchemy

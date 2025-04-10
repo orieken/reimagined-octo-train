@@ -5,7 +5,8 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
 
 from app.config import settings
-from app.models.domain import TextChunk, Report, TestStep, Feature, BuildInfo, TestCase
+
+from app.models import TextChunk, Report, TestCase, TestStep, BuildInfo, Feature
 
 logger = logging.getLogger(__name__)
 

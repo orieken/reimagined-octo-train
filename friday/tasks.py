@@ -7,6 +7,7 @@ import task_modules.db
 import task_modules.docker
 import task_modules.chores
 import task_modules.cucumber
+import task_modules.cu
 
 @task
 def run(c, debug=False):
@@ -44,6 +45,7 @@ ns = Collection(
     task_modules.docker,
     task_modules.chores,
     task_modules.cucumber,
+    task_modules.cu,
     run_local,
     run
 )
