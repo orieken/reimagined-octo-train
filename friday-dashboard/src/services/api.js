@@ -233,8 +233,28 @@ export const processBuildInfo = async (buildInfo) => {
   }
 };
 
+/**
+ * Force the API to use real data instead of mocks
+ * @returns {boolean} - Whether forcing real data was successful
+ */
+export const forceRealData = () => {
+  try {
+    window.localStorage.setItem('forceMockData', 'false');
+    usingMockData = false;
+    console.log('Forced API to use real data');
+    return true;
+  } catch (error) {
+    console.error('Error forcing real data:', error);
+    return false;
+  }
+};
+
+// And update your queryTestData function to check for forced real data mode
 export const queryTestData = async (query) => {
-  if (usingMockData) {
+  // Check if we should force real data
+  const forcedReal = window.localStorage.getItem('forceMockData') === 'false';
+
+  if (usingMockData && !forcedReal) {
     console.log('Using mock data for query:', query);
     return adaptQueryResults({
       status: "success",
@@ -252,6 +272,7 @@ export const queryTestData = async (query) => {
   }
 
   try {
+    console.log(`Sending query to real API: "${query}"`);
     const response = await apiClient.post('/query', { query });
 
     if (response.status >= 400) {
@@ -272,6 +293,7 @@ export const queryTestData = async (query) => {
       });
     }
 
+    console.log('Real API query response:', response.data);
     return adaptQueryResults(response.data);
   } catch (error) {
     console.warn('Query failed, using mock data:', error);

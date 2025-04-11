@@ -1,372 +1,604 @@
-# app/api/routes/failures.py
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Dict, Any, Optional
 import logging
-from datetime import datetime
-import uuid
+from datetime import datetime, timedelta
+from collections import defaultdict, Counter
+import re
 
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
-
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix=settings.API_PREFIX, tags=["failures"])
 
 
-@router.get("/failures/recent", response_model=List[Dict[str, Any]])
-async def get_recent_failures(
-        limit: int = Query(10, description="Maximum number of failures to return"),
-        skip: int = Query(0, description="Number of failures to skip"),
+@router.get("/failures", response_model=Dict[str, Any])
+async def get_failures(
+        days: int = Query(30, description="Number of days to analyze"),
         environment: Optional[str] = Query(None, description="Filter by environment"),
+        build_id: Optional[str] = Query(None, description="Filter by build ID"),
         feature: Optional[str] = Query(None, description="Filter by feature"),
+        limit_recent: int = Query(10, description="Limit for recent failures"),
         orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
 ):
     """
-    Get recent test failures.
+    Get detailed failure analysis for the dashboard.
 
-    This endpoint returns a list of recent test failures,
-    optionally filtered by environment and feature.
+    This endpoint provides comprehensive analysis of test failures, including:
+    - Total failure count
+    - Categorization of failures by error type
+    - Detailed breakdown of each failure category
+    - Failures by feature with failure rates
+    - Recent failures with details
     """
     try:
-        # Build query with filters
-        query_parts = ["recent test failures"]
+        logger.info(f"Starting failures analysis for past {days} days")
 
+        client = orchestrator.vector_db.client
+        collection_name = orchestrator.vector_db.cucumber_collection
+
+        from qdrant_client.http import models as qdrant_models
+
+        # Base filter for test cases
+        test_case_filter = qdrant_models.Filter(
+            must=[
+                qdrant_models.FieldCondition(
+                    key="type",
+                    match=qdrant_models.MatchValue(value="test_case")
+                )
+            ]
+        )
+
+        # Add environment filter if provided
         if environment:
-            query_parts.append(f"environment:{environment}")
+            test_case_filter.must.append(
+                qdrant_models.FieldCondition(
+                    key="environment",
+                    match=qdrant_models.MatchValue(value=environment)
+                )
+            )
+
+        # Add build_id filter if provided
+        if build_id:
+            test_case_filter.must.append(
+                qdrant_models.FieldCondition(
+                    key="report_id",
+                    match=qdrant_models.MatchValue(value=build_id)
+                )
+            )
+
+        # Add feature filter if provided
+        if feature:
+            test_case_filter.must.append(
+                qdrant_models.FieldCondition(
+                    key="feature",
+                    match=qdrant_models.MatchValue(value=feature)
+                )
+            )
+
+        # Get failed test cases only
+        failed_filter = qdrant_models.Filter(
+            must=[
+                qdrant_models.FieldCondition(
+                    key="type",
+                    match=qdrant_models.MatchValue(value="test_case")
+                ),
+                qdrant_models.FieldCondition(
+                    key="status",
+                    match=qdrant_models.MatchValue(value="FAILED")
+                )
+            ]
+        )
+
+        # Add the same filters as above
+        if environment:
+            failed_filter.must.append(
+                qdrant_models.FieldCondition(
+                    key="environment",
+                    match=qdrant_models.MatchValue(value=environment)
+                )
+            )
+
+        if build_id:
+            failed_filter.must.append(
+                qdrant_models.FieldCondition(
+                    key="report_id",
+                    match=qdrant_models.MatchValue(value=build_id)
+                )
+            )
 
         if feature:
-            query_parts.append(f"feature:{feature}")
+            failed_filter.must.append(
+                qdrant_models.FieldCondition(
+                    key="feature",
+                    match=qdrant_models.MatchValue(value=feature)
+                )
+            )
 
-        query = " ".join(query_parts)
+        # Get count of all test cases with filters
+        total_count = client.count(
+            collection_name=collection_name,
+            count_filter=test_case_filter
+        ).count
 
-        # Generate embedding for the query
-        query_embedding = await orchestrator.llm.generate_embedding(query)
+        # Get count of failed test cases with filters
+        failed_count = client.count(
+            collection_name=collection_name,
+            count_filter=failed_filter
+        ).count
 
-        # Search for test cases
-        filters = {
-            "type": "test_case",
-            "status": "FAILED"
-        }
+        logger.info(f"Found {failed_count} failures out of {total_count} total test cases")
 
-        # Perform search to get all failures
-        test_case_results = await orchestrator.semantic_search(
-            query=query,
-            filters=filters,
-            limit=limit + skip
-        )
-
-        # Apply pagination
-        paged_results = test_case_results[skip:limit + skip]
-
-        # Format the results
-        formatted_failures = []
-        for tc in paged_results:
-            payload = tc.payload
-
-            # Check if we need to apply environment filter
-            if environment and payload.get("environment") != environment:
-                continue
-
-            # Check if we need to apply feature filter
-            if feature and payload.get("feature") != feature:
-                continue
-
-            formatted_failures.append({
-                "id": tc.id,
-                "name": payload.get("name", "Unnamed Test Case"),
-                "feature": payload.get("feature", "Unknown Feature"),
-                "error_message": payload.get("error_message", "No error message"),
-                "report_id": payload.get("report_id", "Unknown Report"),
-                "tags": payload.get("tags", [])
-            })
-
-        return formatted_failures
-    except Exception as e:
-        logger.error(f"Error retrieving recent failures: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve recent failures: {str(e)}"
-        )
-
-
-@router.get("/failures/analysis", response_model=Dict[str, Any])
-async def analyze_failure_patterns(
-        time_period: str = Query("last_week", description="Time period for analysis (last_day, last_week, last_month)"),
-        environment: Optional[str] = Query(None, description="Filter by environment"),
-        feature: Optional[str] = Query(None, description="Filter by feature"),
-        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
-):
-    """
-    Analyze patterns in test failures.
-
-    This endpoint uses the LLM to identify patterns in test failures
-    over the specified time period.
-    """
-    try:
-        # Build query with filters
-        query_parts = [f"test failure patterns {time_period}"]
-
-        if environment:
-            query_parts.append(f"environment:{environment}")
-
-        if feature:
-            query_parts.append(f"feature:{feature}")
-
-        query = " ".join(query_parts)
-
-        # Generate embedding for the query
-        query_embedding = await orchestrator.llm.generate_embedding(query)
-
-        # Search for failed test cases
-        filters = {
-            "type": "test_case",
-            "status": "FAILED"
-        }
-
-        # Get a larger sample of failures for analysis
-        test_case_results = await orchestrator.semantic_search(
-            query=query,
-            filters=filters,
-            limit=100  # Larger limit for more comprehensive analysis
-        )
-
-        # Filter results if needed
-        if environment or feature:
-            filtered_results = []
-            for tc in test_case_results:
-                payload = tc.payload
-
-                # Check environment filter
-                if environment and payload.get("environment") != environment:
-                    continue
-
-                # Check feature filter
-                if feature and payload.get("feature") != feature:
-                    continue
-
-                filtered_results.append(tc)
-
-            test_case_results = filtered_results
-
-        # If we have no results, return early
-        if not test_case_results:
-            return {
-                "message": "No failures found for the specified criteria",
-                "time_period": time_period,
-                "environment": environment,
-                "feature": feature,
-                "timestamp": datetime.now().isoformat()
-            }
-
-        # Group failures by error message pattern
-        # This is a simple grouping; the LLM will do more sophisticated analysis
-        error_groups = {}
-        for tc in test_case_results:
-            error_msg = tc.payload.get("error_message", "Unknown error")
-            if error_msg not in error_groups:
-                error_groups[error_msg] = []
-
-            error_groups[error_msg].append(tc.payload)
-
-        # Prepare data for LLM analysis
-        analysis_data = {
-            "time_period": time_period,
-            "environment": environment,
-            "feature": feature,
-            "total_failures": len(test_case_results),
-            "error_groups": [
-                {
-                    "error": error,
-                    "count": len(failures),
-                    "examples": failures[:3]  # Just include a few examples
-                }
-                for error, failures in error_groups.items()
+        # Create a predefined list of error categories with their patterns
+        error_categories = {
+            "UI Elements Not Found": [
+                "element not found", "element not visible", "no such element",
+                "element not interactable", "could not find", "cannot find", "not displayed"
+            ],
+            "Timeout Errors": [
+                "timeout", "timed out", "wait time exceeded", "wait exceeded", "waited",
+                "loading", "took too long"
+            ],
+            "Assertion Failures": [
+                "assertion", "assert", "expected", "should be", "should have", "expected",
+                "verify", "validation"
+            ],
+            "API Errors": [
+                "api", "status code", "response", "server error", "500", "404", "bad request",
+                "network", "connection"
+            ],
+            "Form Validation Errors": [
+                "form", "validation", "invalid", "required field", "input", "value",
+                "field", "submit"
+            ],
+            "Authentication Errors": [
+                "login", "logout", "auth", "permission", "access denied", "credentials",
+                "unauthorized", "forbidden"
+            ],
+            "Payment/Checkout Errors": [
+                "payment", "checkout", "transaction", "credit card", "purchase", "order",
+                "billing", "pricing"
+            ],
+            "Data/State Errors": [
+                "data", "state", "inconsistent", "mismatch", "not matching", "different"
+            ],
+            "JavaScript Errors": [
+                "javascript", "js error", "script error", "undefined is not", "null reference"
+            ],
+            "Database Errors": [
+                "database", "db error", "sql", "query failed", "record not found"
             ]
         }
 
-        # Generate analysis with LLM
-        analysis_prompt = f"""
-        Analyze the following test failure patterns:
+        # Retrieve all failed test cases with manual date filtering
+        all_failed_tests = []
+        offset = None
+        limit = 1000
+        cutoff_date = None
 
-        {analysis_data}
+        if days > 0:
+            cutoff_date = datetime.now() - timedelta(days=days)
 
-        Identify:
-        1. Common patterns in the failures
-        2. Possible root causes
-        3. Recommendations for fixing or investigating these failures
-
-        Provide a clear, concise analysis with actionable recommendations.
-        """
-
-        analysis = await orchestrator.llm.generate_text(
-            prompt=analysis_prompt,
-            temperature=0.3,
-            max_tokens=1000
-        )
-
-        # Return the analysis
-        return {
-            "time_period": time_period,
-            "environment": environment,
-            "feature": feature,
-            "total_failures": len(test_case_results),
-            "failure_groups": len(error_groups),
-            "analysis": analysis,
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Error analyzing failure patterns: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to analyze failure patterns: {str(e)}"
-        )
-
-
-@router.get("/failures/flaky-tests", response_model=List[Dict[str, Any]])
-async def get_flaky_tests(
-        threshold: int = Query(2, description="Minimum number of failures required to be considered flaky"),
-        limit: int = Query(10, description="Maximum number of tests to return"),
-        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
-):
-    """
-    Get potentially flaky tests.
-
-    This endpoint identifies tests that have both passed and failed
-    recently, indicating they might be flaky.
-    """
-    try:
-        # Build query to find flaky tests
-        query = "flaky tests inconsistent results"
-
-        # Generate embedding for the query
-        query_embedding = await orchestrator.llm.generate_embedding(query)
-
-        # Get all test cases
-        test_case_results = orchestrator.vector_db.search_test_cases(
-            query_embedding=query_embedding,
-            limit=1000  # We need a large sample to find patterns
-        )
-
-        # Group test cases by name to find ones that have failed and passed
-        test_groups = {}
-        for tc in test_case_results:
-            name = tc.payload.get("name")
-            feature = tc.payload.get("feature")
-            key = f"{feature}::{name}"
-
-            if key not in test_groups:
-                test_groups[key] = {
-                    "name": name,
-                    "feature": feature,
-                    "statuses": {},
-                    "instances": []
-                }
-
-            status = tc.payload.get("status")
-            test_groups[key]["statuses"][status] = test_groups[key]["statuses"].get(status, 0) + 1
-            test_groups[key]["instances"].append(tc.payload)
-
-        # Find tests that have both passed and failed
-        flaky_tests = []
-        for key, data in test_groups.items():
-            if "PASSED" in data["statuses"] and "FAILED" in data["statuses"]:
-                if data["statuses"].get("FAILED", 0) >= threshold:
-                    flaky_tests.append({
-                        "name": data["name"],
-                        "feature": data["feature"],
-                        "pass_count": data["statuses"].get("PASSED", 0),
-                        "fail_count": data["statuses"].get("FAILED", 0),
-                        "flakiness_score": min(
-                            10,
-                            10 * data["statuses"].get("FAILED", 0) / (
-                                        data["statuses"].get("PASSED", 0) + data["statuses"].get("FAILED", 0))
-                        ),
-                        "latest_examples": data["instances"][:3]
-                    })
-
-        # Sort by flakiness score (descending)
-        flaky_tests.sort(key=lambda x: x["flakiness_score"], reverse=True)
-
-        # Apply limit
-        return flaky_tests[:limit]
-    except Exception as e:
-        logger.error(f"Error identifying flaky tests: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to identify flaky tests: {str(e)}"
-        )
-
-
-@router.get("/failures/{test_case_id}/similar", response_model=List[Dict[str, Any]])
-async def find_similar_failures(
-        test_case_id: str = Path(..., description="ID of the test case to find similar failures for"),
-        limit: int = Query(5, description="Maximum number of similar failures to return"),
-        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
-):
-    """
-    Find test failures similar to the specified test case.
-
-    This endpoint uses semantic search to find failures with similar
-    characteristics to the specified test case.
-    """
-    try:
-        # First, get the test case
-        query_text = "test case details"
-        query_embedding = await orchestrator.llm.generate_embedding(query_text)
-
-        test_case_results = orchestrator.vector_db.search_test_cases(
-            query_embedding=query_embedding,
-            limit=10
-        )
-
-        # Find the exact test case
-        matching_test_cases = [tc for tc in test_case_results if tc.id == test_case_id]
-
-        if not matching_test_cases:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Test case with ID {test_case_id} not found"
+        # Fetch all failed test cases
+        while True:
+            logger.debug(f"Fetching batch of failed tests with offset {offset}")
+            failed_tests_batch, offset = client.scroll(
+                collection_name=collection_name,
+                scroll_filter=failed_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False
             )
 
-        test_case = matching_test_cases[0].payload
+            if cutoff_date:
+                filtered_batch = []
+                for tc in failed_tests_batch:
+                    try:
+                        timestamp = tc.payload.get("timestamp", "")
+                        if timestamp:
+                            tc_date = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                            if tc_date >= cutoff_date:
+                                filtered_batch.append(tc)
+                        else:
+                            filtered_batch.append(tc)
+                    except (ValueError, TypeError):
+                        filtered_batch.append(tc)
+                all_failed_tests.extend(filtered_batch)
+            else:
+                all_failed_tests.extend(failed_tests_batch)
 
-        # Create a query based on the test case details
-        search_query = f"{test_case.get('name', '')} {test_case.get('error_message', '')}"
+            if offset is None or len(failed_tests_batch) < limit:
+                break
 
-        # Generate embedding for the search query
-        search_embedding = await orchestrator.llm.generate_embedding(search_query)
+        # Recalculate total failed count when date filtering is applied
+        if cutoff_date:
+            failed_count = len(all_failed_tests)
+            logger.info(f"After date filtering: {failed_count} failures in the last {days} days")
 
-        # Search for similar test cases
-        similar_test_cases = orchestrator.vector_db.search_test_cases(
-            query_embedding=search_embedding,
-            limit=limit + 1  # +1 because the original might be included
+        # Define helper functions for categorization and element extraction
+        def categorize_error(error_message, scenario_name=None):
+            """
+            Categorize an error based on error message or scenario name.
+
+            Args:
+                error_message: The error message text or None
+                scenario_name: The name of the test scenario (used as fallback)
+
+            Returns:
+                String category name
+            """
+            # If no error message, try to infer from scenario name
+            if not error_message and scenario_name:
+                scenario_lower = scenario_name.lower()
+
+                # Try to infer category from scenario name
+                if any(word in scenario_lower for word in ["submit", "click", "select", "enter"]):
+                    return "UI Elements Not Found"
+                elif any(word in scenario_lower for word in ["wait", "load", "display"]):
+                    return "Timeout Errors"
+                elif any(word in scenario_lower for word in ["verify", "check", "validate", "expect"]):
+                    return "Assertion Failures"
+                elif any(word in scenario_lower for word in ["api", "response", "data"]):
+                    return "API Errors"
+
+                # Fallback category based on feature or specific scenario patterns
+                if "form" in scenario_lower:
+                    return "Form Validation Errors"
+                elif "login" in scenario_lower or "auth" in scenario_lower:
+                    return "Authentication Errors"
+                elif "checkout" in scenario_lower or "payment" in scenario_lower:
+                    return "Payment/Checkout Errors"
+                elif "search" in scenario_lower:
+                    return "Search Functionality Errors"
+                elif "profile" in scenario_lower or "account" in scenario_lower:
+                    return "User Account Errors"
+                elif "cart" in scenario_lower:
+                    return "Shopping Cart Errors"
+
+                return "Functional Errors"  # Better default than "Unknown"
+
+            if not error_message:
+                return "Test Execution Errors"  # Better default than "Unknown"
+
+            error_message = error_message.lower()
+
+            for category, patterns in error_categories.items():
+                if any(pattern in error_message for pattern in patterns):
+                    return category
+
+            return "Other"
+
+        def extract_element(error_message, category, scenario_name=None, feature=None):
+            """
+            Extract specific element involved in a failure.
+
+            Args:
+                error_message: The error message text or None
+                category: The error category
+                scenario_name: The name of the test scenario (used as fallback)
+                feature: The feature being tested (used as fallback)
+
+            Returns:
+                String element name
+            """
+            # If no error message but we have scenario name, try to extract from scenario
+            if not error_message and scenario_name:
+                scenario_lower = scenario_name.lower()
+
+                # Extract UI elements from scenario name
+                ui_elements = [
+                    "button", "form", "input", "field", "page", "menu", "dropdown",
+                    "checkbox", "radio", "link", "image", "card", "modal", "dialog"
+                ]
+
+                # Common business elements based on e-commerce scenarios
+                business_elements = [
+                    "review", "rating", "product", "cart", "order", "account", "profile",
+                    "payment", "shipping", "login", "registration", "search", "checkout",
+                    "contact", "support", "price", "quantity", "description", "image"
+                ]
+
+                # Check for UI elements first
+                for element in ui_elements:
+                    if element in scenario_lower:
+                        element_pattern = fr'(?:the|a|an)\s+([^\s]*\s+{element}|{element})'
+                        match = re.search(element_pattern, scenario_lower)
+                        if match:
+                            return match.group(1).strip().title()
+                        return element.title()
+
+                # Then check for business elements
+                for element in business_elements:
+                    if element in scenario_lower:
+                        element_pattern = fr'(?:the|a|an)\s+([^\s]*\s+{element}|{element})'
+                        match = re.search(element_pattern, scenario_lower)
+                        if match:
+                            return match.group(1).strip().title()
+                        return element.title()
+
+                # Extract action-based elements
+                action_patterns = [
+                    r'(?:submitting|viewing|checking|adding|removing|updating|selecting)\s+(?:a|the|an)\s+(.*?)(?:\s+as|\s+with|\s+for|\s+when|$)',
+                    r'(?:attempt(?:ing)? to|trying to)\s+([^,\.]*)',
+                ]
+
+                for pattern in action_patterns:
+                    match = re.search(pattern, scenario_lower)
+                    if match:
+                        extracted = match.group(1).strip()
+                        # Limit to 3 words to avoid getting entire phrase
+                        extracted = ' '.join(extracted.split()[:3])
+                        return extracted.title()
+
+                # If we have a feature and category, combine them
+                if feature and "Unknown" not in feature:
+                    feature_element = feature.split()[-1] if len(feature.split()) > 1 else feature
+                    return feature_element.title()
+
+                # Last resort: return the first few words of scenario
+                words = scenario_lower.split()
+                if len(words) > 2:
+                    return ' '.join(words[0:min(3, len(words))]).title()
+
+                return "User Interaction"  # Better default
+
+            if not error_message:
+                # Generate element based on category if no error message
+                if category == "UI Elements Not Found":
+                    return "UI Component"
+                elif category == "Timeout Errors":
+                    return "Operation Timeout"
+                elif category == "Assertion Failures":
+                    return "Expected Condition"
+                elif category == "Form Validation Errors":
+                    return "Form Field"
+                elif category == "Authentication Errors":
+                    return "Authentication Flow"
+                elif category == "Payment/Checkout Errors":
+                    return "Payment Process"
+                elif category == "Search Functionality Errors":
+                    return "Search Results"
+                elif category == "User Account Errors":
+                    return "User Data"
+                elif category == "Shopping Cart Errors":
+                    return "Cart Item"
+
+                # Incorporate feature if available
+                if feature and "Unknown" not in feature:
+                    return feature.split()[-1].title()
+
+                return "Test Component"
+
+            error_message = error_message.lower()
+
+            if category == "UI Elements Not Found":
+                # Extract element name from patterns like "element <n> not found"
+                patterns = [
+                    r"element ['\"](.*?)['\"] not",
+                    r"element (.*?) not",
+                    r"(.*?) element not found",
+                    r"cannot find (.*?) element",
+                    r"could not find (.*)"
+                ]
+
+                for pattern in patterns:
+                    match = re.search(pattern, error_message)
+                    if match:
+                        return match.group(1).strip().title()
+
+                return "UI Element"
+
+            elif category == "Timeout Errors":
+                if "api" in error_message or "response" in error_message:
+                    return "API Response"
+                elif "page" in error_message or "load" in error_message:
+                    return "Page Load"
+                elif "element" in error_message:
+                    return "Element Appearance"
+                return "Operation Timeout"
+
+            elif category == "Assertion Failures":
+                patterns = [
+                    r"expected ['\"](.*?)['\"]",
+                    r"expected (.*?) to",
+                    r"assert (.*?) failed"
+                ]
+
+                for pattern in patterns:
+                    match = re.search(pattern, error_message)
+                    if match:
+                        return match.group(1).strip().title()
+
+                return "Test Assertion"
+
+            # Default case
+            return category
+
+        # Process test failures for categorization, by_feature, elements, and scenarios
+        categories_count = Counter()
+        elements_by_category = defaultdict(Counter)
+        scenarios_by_element = defaultdict(set)
+        failures_by_feature = defaultdict(int)
+        tests_by_feature = defaultdict(int)
+
+        logger.info(f"Processing {len(all_failed_tests)} failed tests for categorization")
+
+        # Process all failed tests for categorization
+        for test in all_failed_tests:
+            error_message = test.payload.get("error_message", "")
+            feature = test.payload.get("feature", "Unknown")
+            scenario = test.payload.get("name", "Unknown Scenario")
+
+            # Log some sample data for debugging
+            if test == all_failed_tests[0]:
+                logger.debug(f"Sample test data - Error: {error_message}, Feature: {feature}, Scenario: {scenario}")
+
+            # Categorize error using scenario name as backup
+            category = categorize_error(error_message, scenario)
+            categories_count[category] += 1
+
+            # Extract specific element using scenario name and feature as backup
+            element = extract_element(error_message, category, scenario, feature)
+
+            # Count elements by category
+            elements_by_category[category][element] += 1
+
+            # Add scenario to element
+            key = f"{category}:{element}"
+            scenarios_by_element[key].add(scenario)
+
+            # Count failures by feature
+            failures_by_feature[feature] += 1
+
+        # Get all test cases for feature counts (only apply date filter)
+        all_test_cases = []
+        offset = None
+
+        logger.info("Fetching all test cases for feature statistics")
+
+        # Fetch all test cases for counting by feature
+        while True:
+            test_cases_batch, offset = client.scroll(
+                collection_name=collection_name,
+                scroll_filter=test_case_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False
+            )
+
+            if cutoff_date:
+                filtered_batch = []
+                for tc in test_cases_batch:
+                    try:
+                        timestamp = tc.payload.get("timestamp", "")
+                        if timestamp:
+                            tc_date = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                            if tc_date >= cutoff_date:
+                                filtered_batch.append(tc)
+                        else:
+                            filtered_batch.append(tc)
+                    except (ValueError, TypeError):
+                        filtered_batch.append(tc)
+                all_test_cases.extend(filtered_batch)
+            else:
+                all_test_cases.extend(test_cases_batch)
+
+            if offset is None or len(test_cases_batch) < limit:
+                break
+
+        # Count tests by feature
+        for test in all_test_cases:
+            feature = test.payload.get("feature", "Unknown")
+            tests_by_feature[feature] += 1
+
+        logger.info("Preparing response data")
+
+        # Prepare categories list in required format
+        categories_list = []
+        for category, count in categories_count.most_common():
+            percentage = round((count / failed_count) * 100, 1) if failed_count > 0 else 0
+            categories_list.append({
+                "name": category,
+                "count": count,
+                "percentage": percentage
+            })
+
+        # Prepare details dictionary in required format
+        details_dict = {}
+        for category in categories_count:
+            details_list = []
+
+            for element, occurrences in elements_by_category[category].most_common():
+                key = f"{category}:{element}"
+                scenarios_list = list(scenarios_by_element.get(key, []))
+
+                details_list.append({
+                    "element": element,
+                    "occurrences": occurrences,
+                    "scenarios": scenarios_list[:5]  # Limit to top 5 scenarios
+                })
+
+            details_dict[category] = details_list
+
+        # Prepare by_feature list in required format
+        by_feature_list = []
+        for feature, failures in sorted(failures_by_feature.items(), key=lambda x: x[1], reverse=True):
+            tests = tests_by_feature.get(feature, 0)
+            failure_rate = round(failures / tests, 3) if tests > 0 else 0
+
+            by_feature_list.append({
+                "feature": feature,
+                "failures": failures,
+                "tests": tests,
+                "failure_rate": failure_rate
+            })
+
+        # Get recent failures ordered by timestamp
+        logger.info("Preparing recent failures list")
+        recent_failures = []
+        sorted_failures = sorted(
+            all_failed_tests,
+            key=lambda x: x.payload.get("timestamp", ""),
+            reverse=True
         )
 
-        # Filter out the original test case
-        similar_test_cases = [tc for tc in similar_test_cases if tc.id != test_case_id]
+        for failure in sorted_failures[:limit_recent]:
+            # If error message is null, generate a descriptive error based on scenario and category
+            error_message = failure.payload.get("error_message")
+            scenario_name = failure.payload.get("name", "Unknown Scenario")
 
-        # Limit the results
-        similar_test_cases = similar_test_cases[:limit]
+            if not error_message:
+                feature = failure.payload.get("feature", "")
+                # Determine category and element
+                category = categorize_error(None, scenario_name)
+                element = extract_element(None, category, scenario_name, feature)
 
-        # Format the results
-        return [
-            {
-                "id": tc.id,
-                "name": tc.payload.get("name", "Unnamed Test Case"),
-                "feature": tc.payload.get("feature", "Unknown Feature"),
-                "error_message": tc.payload.get("error_message", "No error message"),
-                "report_id": tc.payload.get("report_id", "Unknown Report"),
-                "similarity_score": tc.score
+                # Generate descriptive error message
+                if category == "UI Elements Not Found":
+                    error_message = f"Failed to locate or interact with {element}"
+                elif category == "Timeout Errors":
+                    error_message = f"Timeout waiting for {element} to complete"
+                elif category == "Assertion Failures":
+                    error_message = f"Verification failed: {element} did not match expected value"
+                elif category == "API Errors":
+                    error_message = f"API response error while accessing {element}"
+                elif category == "Form Validation Errors":
+                    error_message = f"Form validation error in {element}"
+                else:
+                    # Generic error based on the scenario name
+                    words = scenario_name.split()
+                    if len(words) > 3:
+                        error_message = f"Failed while {' '.join(words[:3]).lower()}..."
+                    else:
+                        error_message = f"Failed to complete {scenario_name.lower()}"
+
+            recent_failures.append({
+                "id": failure.id,
+                "scenario": scenario_name,
+                "error": error_message or "Unknown Error",
+                "date": failure.payload.get("timestamp", ""),
+                "build": failure.payload.get("report_id", "Unknown Build")
+            })
+
+        logger.info("Failures analysis complete, returning response")
+        return {
+            "status": "success",
+            "failures": {
+                "total_failures": failed_count,
+                "categories": categories_list,
+                "details": details_dict,
+                "by_feature": by_feature_list,
+                "recent": recent_failures
             }
-            for tc in similar_test_cases
-        ]
-    except HTTPException:
-        raise
+        }
+
     except Exception as e:
-        logger.error(f"Error finding similar failures: {str(e)}")
+        logger.error(f"Error retrieving failures data: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to find similar failures: {str(e)}"
+            detail=f"Failed to retrieve failures data: {str(e)}"
         )

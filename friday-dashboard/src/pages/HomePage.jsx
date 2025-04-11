@@ -47,7 +47,7 @@ const HomePage = () => {
     fetchStats();
   }, []);
 
-  const StatCard = ({ title, value, icon, color, onClick }) => (
+  const StatCard = ({ title, value, secondaryLabel, secondaryValue, icon, color, onClick }) => (
     <div
       className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-l-4 ${color}`}
       onClick={onClick}
@@ -56,6 +56,12 @@ const HomePage = () => {
         <div>
           <p className="text-sm font-medium text-secondary mb-1">{title}</p>
           <p className="text-2xl font-bold">{value}</p>
+          {secondaryLabel && secondaryValue && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-xs text-secondary">{secondaryLabel}:</span>
+              <span className="text-sm font-medium">{secondaryValue}</span>
+            </div>
+          )}
         </div>
         <div className={`p-3 rounded-full bg-opacity-10 ${color.replace('border', 'bg')}`}>
           {icon}
@@ -64,11 +70,24 @@ const HomePage = () => {
     </div>
   );
 
+  const formatPercentage = (value, decimals = 2) => {
+    return `${(value * 100).toFixed(decimals)}%`;
+  };
+
+  // Function to calculate the executed pass rate.
+  // It considers only the passed and failed scenarios.
+  const calculateExecutedPassRate = (passed, failed) => {
+    const executedTotal = passed + failed;
+    if (executedTotal === 0) return '0.00%'; // Avoid division by zero.
+    const rate = passed / executedTotal;
+    return formatPercentage(rate, 2);
+  };
+
   // Safely format pass rate with fallback
   const formatPassRate = (rate) => {
     console.log('Formatting pass rate:', rate); // Debug log to see the value being formatted
     if (typeof rate !== 'number') return '0.0%';
-    return `${rate.toFixed(1)}%`;
+    return `${(rate * 100).toFixed(1)}%`;
   };
 
   // Safely format numbers with fallback
@@ -105,9 +124,13 @@ const HomePage = () => {
           <StatCard
             title="Pass Rate"
             value={formatPassRate(stats.passRate)}
+            secondaryLabel="Executed"
+            secondaryValue={calculateExecutedPassRate(stats.passedTests, stats.failedTests)}
             icon={
-              <svg className="w-6 h-6 text-success" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg className="w-6 h-6 text-success" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             }
             color="border-success"
@@ -117,8 +140,10 @@ const HomePage = () => {
             title="Total Tests"
             value={formatNumber(stats.totalTests)}
             icon={
-              <svg className="w-6 h-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              <svg className="w-6 h-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
               </svg>
             }
             color="border-primary"
@@ -128,8 +153,9 @@ const HomePage = () => {
             title="Passed Tests"
             value={formatNumber(stats.passedTests)}
             icon={
-              <svg className="w-6 h-6 text-success" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              <svg className="w-6 h-6 text-success" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
               </svg>
             }
             color="border-success"
@@ -139,8 +165,9 @@ const HomePage = () => {
             title="Failed Tests"
             value={formatNumber(stats.failedTests)}
             icon={
-              <svg className="w-6 h-6 text-danger" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              <svg className="w-6 h-6 text-danger" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             }
             color="border-danger"
@@ -174,8 +201,10 @@ const HomePage = () => {
                 className="btn btn-primary flex items-center justify-center"
                 onClick={() => navigate('/query')}
               >
-                <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                        d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 Query Test Data
               </button>
@@ -183,8 +212,10 @@ const HomePage = () => {
                 className="btn btn-secondary flex items-center justify-center"
                 onClick={() => navigate('/test-results')}
               >
-                <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
                 View All Test Results
               </button>
