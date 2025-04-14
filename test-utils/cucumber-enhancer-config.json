@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "project": "retail-platform",
+    "branch": "main",
+    "commit": "a389f82",
+    "runner": "cucumber-junit",
+    "environment": "integration"
+  },
+  "reportsDir": "./reports",
+  "outputFile": "enhanced-cucumber-report.json",
+  "includeSummary": true,
+  "includeTagsSummary": true,
+  "outputFormat": "json",
+  "errorScreenshotDir": "./test-failures"
+}
