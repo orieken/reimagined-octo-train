@@ -64,6 +64,9 @@ class BuildInfo(BaseModel):
             return (self.end_time - self.start_time).total_seconds()
         return self.duration
 
+class StepEmbedding(BaseModel):
+    data: str
+    mime_type: str
 
 class Step(BaseModel):
     """Model representing a test step."""
@@ -76,7 +79,7 @@ class Step(BaseModel):
     duration: Optional[float] = None
     screenshot: Optional[str] = None
     logs: Optional[List[str]] = None
-    embeddings: Optional[List[float]] = None  # Added embeddings field
+    embeddings: Optional[List[StepEmbedding]] = None
 
     class Config:
         use_enum_values = True
