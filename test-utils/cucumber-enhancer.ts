@@ -1,72 +1,4 @@
-/**
-   * Post the enhanced report to an API endpoint
-   */
-  private async postReportToApi(reportData: string): Promise<void> {
-    if (!this.apiConfig) return;
-
-    return new Promise((resolve, reject) => {
-      try {
-        const url = new URL(this.apiConfig.endpoint);
-        const isHttps = url.protocol === 'https:';
-
-        // Prepare the request options
-        const options = {
-          hostname: url.hostname,
-          port: url.port || (isHttps ? 443 : 80),
-          path: url.pathname + url.search,
-          method: this.apiConfig.method,
-          headers: {
-            ...this.apiConfig.headers,
-            'Content-Length': Buffer.byteLength(reportData)
-          },
-          timeout: this.apiConfig.timeout
-        };
-
-        // Create the appropriate request object
-        const req = (isHttps ? https : http).request(options, (res) => {
-          const chunks: Buffer[] = [];
-
-          res.on('data', (chunk) => {
-            chunks.push(chunk);
-          });
-
-          res.on('end', () => {
-            const responseBody = Buffer.concat(chunks).toString();
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-              console.log(`Report successfully posted to ${this.apiConfig?.endpoint}`);
-              console.log(`Status: ${res.statusCode} ${res.statusMessage}`);
-              resolve();
-            } else {
-              console.error(`Error posting report to API: ${res.statusCode} ${res.statusMessage}`);
-              console.error(`Response: ${responseBody}`);
-              reject(new Error(`API responded with status ${res.statusCode}: ${responseBody}`));
-            }
-          });
-        });
-
-        // Handle request errors
-        req.on('error', (error) => {
-          console.error(`Error posting report to API: ${error.message}`);
-          reject(error);
-        });
-
-        // Handle timeout
-        req.on('timeout', () => {
-          req.destroy();
-          console.error(`Request to ${this.apiConfig?.endpoint} timed out after ${this.apiConfig?.timeout}ms`);
-          reject(new Error(`Request timed out after ${this.apiConfig?.timeout}ms`));
-        });
-
-        // Send the report data
-        req.write(reportData);
-        req.end();
-
-      } catch (error) {
-        console.error('Error preparing API request:', error);
-        reject(error);
-      }
-    });
-  }import * as fs from 'fs';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
 import * as https from 'https';
@@ -511,7 +443,7 @@ class CucumberReportEnhancer {
         name: feature.name,
         scenarios_count: feature.elements?.length || 0,
         failures: feature.elements?.filter(element =>
-          this.getScenarioStatus((element: any)) === 'failed'
+          this.getScenarioStatus(element) === 'failed'
         ).map((element: any) => ({
           name: element.name,
           error: this.getScenarioError(element)
@@ -631,6 +563,76 @@ class CucumberReportEnhancer {
 
     console.log(`Duration: ${this.formatDuration(summary.duration)}`);
     console.log('===========================\n');
+  }
+
+  /**
+   * Post the enhanced report to an API endpoint
+   */
+  private async postReportToApi(reportData: string): Promise<void> {
+    if (!this.apiConfig) return;
+
+    return new Promise((resolve, reject) => {
+      try {
+        const url = new URL(this.apiConfig.endpoint);
+        const isHttps = url.protocol === 'https:';
+
+        // Prepare the request options
+        const options = {
+          hostname: url.hostname,
+          port: url.port || (isHttps ? 443 : 80),
+          path: url.pathname + url.search,
+          method: this.apiConfig.method,
+          headers: {
+            ...this.apiConfig.headers,
+            'Content-Length': Buffer.byteLength(reportData)
+          },
+          timeout: this.apiConfig.timeout
+        };
+
+        // Create the appropriate request object
+        const req = (isHttps ? https : http).request(options, (res) => {
+          const chunks: Buffer[] = [];
+
+          res.on('data', (chunk) => {
+            chunks.push(chunk);
+          });
+
+          res.on('end', () => {
+            const responseBody = Buffer.concat(chunks).toString();
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              console.log(`Report successfully posted to ${this.apiConfig?.endpoint}`);
+              console.log(`Status: ${res.statusCode} ${res.statusMessage}`);
+              resolve();
+            } else {
+              console.error(`Error posting report to API: ${res.statusCode} ${res.statusMessage}`);
+              console.error(`Response: ${responseBody}`);
+              reject(new Error(`API responded with status ${res.statusCode}: ${responseBody}`));
+            }
+          });
+        });
+
+        // Handle request errors
+        req.on('error', (error) => {
+          console.error(`Error posting report to API: ${error.message}`);
+          reject(error);
+        });
+
+        // Handle timeout
+        req.on('timeout', () => {
+          req.destroy();
+          console.error(`Request to ${this.apiConfig?.endpoint} timed out after ${this.apiConfig?.timeout}ms`);
+          reject(new Error(`Request timed out after ${this.apiConfig?.timeout}ms`));
+        });
+
+        // Send the report data
+        req.write(reportData);
+        req.end();
+
+      } catch (error) {
+        console.error('Error preparing API request:', error);
+        reject(error);
+      }
+    });
   }
 
   /**
@@ -871,7 +873,10 @@ Examples:
 
 // Run the script if it's called directly
 if (require.main === module) {
-  main();
+  main().catch(error => {
+    console.error('Unhandled error in main execution:', error);
+    process.exit(1);
+  });
 }
 
 export { CucumberReportEnhancer };
