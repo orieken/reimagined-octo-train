@@ -1,5 +1,76 @@
-import * as fs from 'fs';
+/**
+   * Post the enhanced report to an API endpoint
+   */
+  private async postReportToApi(reportData: string): Promise<void> {
+    if (!this.apiConfig) return;
+
+    return new Promise((resolve, reject) => {
+      try {
+        const url = new URL(this.apiConfig.endpoint);
+        const isHttps = url.protocol === 'https:';
+
+        // Prepare the request options
+        const options = {
+          hostname: url.hostname,
+          port: url.port || (isHttps ? 443 : 80),
+          path: url.pathname + url.search,
+          method: this.apiConfig.method,
+          headers: {
+            ...this.apiConfig.headers,
+            'Content-Length': Buffer.byteLength(reportData)
+          },
+          timeout: this.apiConfig.timeout
+        };
+
+        // Create the appropriate request object
+        const req = (isHttps ? https : http).request(options, (res) => {
+          const chunks: Buffer[] = [];
+
+          res.on('data', (chunk) => {
+            chunks.push(chunk);
+          });
+
+          res.on('end', () => {
+            const responseBody = Buffer.concat(chunks).toString();
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              console.log(`Report successfully posted to ${this.apiConfig?.endpoint}`);
+              console.log(`Status: ${res.statusCode} ${res.statusMessage}`);
+              resolve();
+            } else {
+              console.error(`Error posting report to API: ${res.statusCode} ${res.statusMessage}`);
+              console.error(`Response: ${responseBody}`);
+              reject(new Error(`API responded with status ${res.statusCode}: ${responseBody}`));
+            }
+          });
+        });
+
+        // Handle request errors
+        req.on('error', (error) => {
+          console.error(`Error posting report to API: ${error.message}`);
+          reject(error);
+        });
+
+        // Handle timeout
+        req.on('timeout', () => {
+          req.destroy();
+          console.error(`Request to ${this.apiConfig?.endpoint} timed out after ${this.apiConfig?.timeout}ms`);
+          reject(new Error(`Request timed out after ${this.apiConfig?.timeout}ms`));
+        });
+
+        // Send the report data
+        req.write(reportData);
+        req.end();
+
+      } catch (error) {
+        console.error('Error preparing API request:', error);
+        reject(error);
+      }
+    });
+  }import * as fs from 'fs';
 import * as path from 'path';
+import * as http from 'http';
+import * as https from 'https';
+import { URL } from 'url';
 
 interface CucumberReport {
   [key: string]: any;
@@ -36,6 +107,12 @@ interface Config {
   includeTagsSummary?: boolean;
   outputFormat?: 'json' | 'pretty' | 'minimal';
   errorScreenshotDir?: string;
+  api?: {
+    endpoint: string;
+    method?: 'POST' | 'PUT';
+    headers?: Record<string, string>;
+    timeout?: number;
+  };
 }
 
 /**
@@ -49,6 +126,12 @@ class CucumberReportEnhancer {
   private includeTagsSummary: boolean;
   private outputFormat: 'json' | 'pretty' | 'minimal';
   private errorScreenshotDir?: string;
+  private apiConfig?: {
+    endpoint: string;
+    method: 'POST' | 'PUT';
+    headers: Record<string, string>;
+    timeout: number;
+  };
 
   constructor(
     inputFile: string,
@@ -59,6 +142,12 @@ class CucumberReportEnhancer {
       includeTagsSummary?: boolean;
       outputFormat?: 'json' | 'pretty' | 'minimal';
       errorScreenshotDir?: string;
+      apiConfig?: {
+        endpoint: string;
+        method?: 'POST' | 'PUT';
+        headers?: Record<string, string>;
+        timeout?: number;
+      };
     } = {}
   ) {
     this.inputFile = inputFile;
@@ -71,12 +160,23 @@ class CucumberReportEnhancer {
     this.includeTagsSummary = options.includeTagsSummary ?? true;
     this.outputFormat = options.outputFormat ?? 'json';
     this.errorScreenshotDir = options.errorScreenshotDir;
+
+    if (options.apiConfig) {
+      this.apiConfig = {
+        endpoint: options.apiConfig.endpoint,
+        method: options.apiConfig.method || 'POST',
+        headers: options.apiConfig.headers || {
+          'Content-Type': 'application/json'
+        },
+        timeout: options.apiConfig.timeout || 30000 // Default 30 second timeout
+      };
+    }
   }
 
   /**
    * Process the Cucumber report and add metadata
    */
-  public process(): void {
+  public async process(): Promise<void> {
     try {
       // Read the input file
       const rawData = fs.readFileSync(this.inputFile, 'utf8');
@@ -123,7 +223,7 @@ class CucumberReportEnhancer {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      // Write the enhanced report to the output file
+      // Generate the output content based on format
       let outputContent: string;
       if (this.outputFormat === 'json') {
         outputContent = JSON.stringify(enhancedReport, null, 2);
@@ -133,6 +233,7 @@ class CucumberReportEnhancer {
         outputContent = this.generateMinimalOutput(enhancedReport);
       }
 
+      // Write the enhanced report to the output file
       fs.writeFileSync(
         this.outputFile,
         outputContent,
@@ -142,6 +243,23 @@ class CucumberReportEnhancer {
       // Print success message with summary
       this.printSummary(enhancedReport);
       console.log(`Enhanced report saved to ${this.outputFile}`);
+
+      // Post to API if configured
+      if (this.apiConfig) {
+        try {
+          // For API posting, always use JSON format regardless of output format
+          const apiPayload = this.outputFormat === 'json' ?
+            outputContent :
+            JSON.stringify(enhancedReport, null, 2);
+
+          console.log(`Posting report to API: ${this.apiConfig.endpoint}`);
+          await this.postReportToApi(apiPayload);
+        } catch (apiError) {
+          console.error('Failed to post report to API, but local file was saved successfully.');
+          console.error(apiError);
+        }
+      }
+
     } catch (error) {
       console.error('Error processing Cucumber report:');
       if (error instanceof Error) {
@@ -152,7 +270,7 @@ class CucumberReportEnhancer {
       } else {
         console.error(error);
       }
-      process.exit(1);
+      throw error;
     }
   }
 
@@ -393,8 +511,8 @@ class CucumberReportEnhancer {
         name: feature.name,
         scenarios_count: feature.elements?.length || 0,
         failures: feature.elements?.filter(element =>
-          this.getScenarioStatus(element) === 'failed'
-        ).map(element => ({
+          this.getScenarioStatus((element: any)) === 'failed'
+        ).map((element: any) => ({
           name: element.name,
           error: this.getScenarioError(element)
         })) || []
@@ -583,7 +701,8 @@ class CucumberReportEnhancer {
           includeSummary: config.includeSummary,
           includeTagsSummary: config.includeTagsSummary,
           outputFormat: config.outputFormat,
-          errorScreenshotDir: config.errorScreenshotDir
+          errorScreenshotDir: config.errorScreenshotDir,
+          apiConfig: config.api
         }
       );
     } catch (error) {
@@ -599,7 +718,7 @@ class CucumberReportEnhancer {
 /**
  * Command line script to enhance Cucumber reports
  */
-function main(): void {
+async function main(): Promise<void> {
   // Get command line arguments
   const args = process.argv.slice(2);
 
@@ -609,6 +728,12 @@ function main(): void {
     includeTagsSummary?: boolean;
     outputFormat?: 'json' | 'pretty' | 'minimal';
     errorScreenshotDir?: string;
+    apiConfig?: {
+      endpoint: string;
+      method?: 'POST' | 'PUT';
+      headers?: Record<string, string>;
+      timeout?: number;
+    };
   } = {
     includeSummary: true,
     includeTagsSummary: true,
@@ -638,6 +763,12 @@ function main(): void {
       options.includeTagsSummary = false;
       args.splice(i, 1);
       i--;
+    } else if (args[i] === '--api' && i + 1 < args.length) {
+      options.apiConfig = {
+        endpoint: args[i + 1]
+      };
+      args.splice(i, 2);
+      i--;
     }
   }
 
@@ -651,7 +782,12 @@ function main(): void {
 
     const configPath = args[1];
     const enhancer = CucumberReportEnhancer.fromConfigFile(configPath);
-    enhancer.process();
+
+    try {
+      await enhancer.process();
+    } catch (error) {
+      process.exit(1);
+    }
     return;
   }
 
@@ -664,7 +800,12 @@ function main(): void {
     const metadata = getDefaultMetadata();
 
     const enhancer = new CucumberReportEnhancer(inputFile, outputFile, metadata, options);
-    enhancer.process();
+
+    try {
+      await enhancer.process();
+    } catch (error) {
+      process.exit(1);
+    }
     return;
   }
 
@@ -680,7 +821,12 @@ function main(): void {
 
   // Create and run the enhancer
   const enhancer = new CucumberReportEnhancer(inputFile, outputFile, getDefaultMetadata(), options);
-  enhancer.process();
+
+  try {
+    await enhancer.process();
+  } catch (error) {
+    process.exit(1);
+  }
 }
 
 /**
@@ -712,12 +858,14 @@ Options:
   --screenshots <directory>       Directory to extract failure screenshots
   --no-summary                    Don't include test summary statistics
   --no-tags-summary               Don't include tags in the summary
+  --api <endpoint>                API endpoint to post the report to
 
 Examples:
   node cucumber-enhancer.js cucumber_report.json enhanced-report.json
   node cucumber-enhancer.js cucumber_report.json report.txt --format pretty
   node cucumber-enhancer.js --config cucumber-enhancer-config.json
   node cucumber-enhancer.js --latest ./reports enhanced-report.json --screenshots ./failures
+  node cucumber-enhancer.js --latest ./reports enhanced-report.json --api http://localhost:4000/api/v1/processor/cucumber
   `);
 }
 

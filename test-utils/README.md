@@ -9,6 +9,7 @@ A TypeScript utility that enhances Cucumber test reports by adding metadata and 
 - Extracts failure screenshots from Cucumber embeddings
 - Supports multiple output formats (JSON, Pretty Text, Minimal)
 - Automatically finds the latest report in a directory
+- Posts reports to an API endpoint for integration with other systems
 - Configurable via command line arguments, environment variables, or config file
 
 ## Installation
@@ -37,6 +38,18 @@ node dist/cucumber-enhancer.js --latest ./reports enhanced-report.json
 
 # Or use the NPM script
 npm run enhance
+```
+
+### Posting to an API
+
+You can post the enhanced report to an API endpoint:
+
+```bash
+# Post to a specific API endpoint
+node dist/cucumber-enhancer.js --latest ./reports enhanced-report.json --api http://localhost:4000/api/v1/processor/cucumber
+
+# Or use the NPM script
+npm run enhance:api
 ```
 
 ### Output Formats
@@ -97,7 +110,16 @@ Create a `cucumber-enhancer-config.json` file with all available options:
   "includeSummary": true,
   "includeTagsSummary": true,
   "outputFormat": "json",
-  "errorScreenshotDir": "./test-failures"
+  "errorScreenshotDir": "./test-failures",
+  "api": {
+    "endpoint": "http://localhost:4000/api/v1/processor/cucumber",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer YOUR_API_TOKEN"
+    },
+    "timeout": 30000
+  }
 }
 ```
 
@@ -125,12 +147,12 @@ Add a postcucumber script to your package.json:
 {
   "scripts": {
     "test": "cucumber-js",
-    "postcucumber": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json"
+    "postcucumber": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json --api http://localhost:4000/api/v1/processor/cucumber"
   }
 }
 ```
 
-This will automatically run the enhancer after your Cucumber tests complete, finding the latest report in the ./reports directory.
+This will automatically run the enhancer after your Cucumber tests complete, find the latest report in the ./reports directory, and post it to your API endpoint.
 
 ## Summary Statistics
 
@@ -272,9 +294,43 @@ MIT
   "main": "dist/cucumber-enhancer.js",
   "scripts": {
     "test": "cucumber-js",
+    "test:finder": "ts-node test-report-finder.ts ./test-reports",
+    "test:summary": "ts-node test-summary-generation.ts",
+    "test:api": "ts-node test-api-posting.ts",
     "postcucumber": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json",
     "enhance": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json",
-    "enhance:config": "ts-node cucumber-enhancer.ts --config cucumber-report-builder-config.json",
+    "enhance:config": "ts-node cucumber-enhancer.ts --config cucumber-enhancer-config.json",
+    "enhance:pretty": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.txt --format pretty",
+    "enhance:minimal": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-minimal.json --format minimal",
+    "enhance:screenshots": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json --screenshots ./test-failures",
+    "enhance:api": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json --api http://localhost:4000/api/v1/processor/cucumber",
+    "build": "tsc",
+    "start": "node dist/cucumber-enhancer.js"
+  },
+  "dependencies": {
+    "fs-extra": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/node": "^16.11.12",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.3"
+  }
+}{
+  "name": "cucumber-test-reporter",
+  "version": "1.0.0",
+  "description": "Enhance Cucumber test reports with metadata",
+  "main": "dist/cucumber-enhancer.js",
+  "scripts": {
+    "test": "cucumber-js",
+    "test:finder": "ts-node test-report-finder.ts ./test-reports",
+    "test:summary": "ts-node test-summary-generation.ts",
+    "postcucumber": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json",
+    "enhance": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json",
+    "enhance:config": "ts-node cucumber-enhancer.ts --config cucumber-enhancer-config.json",
+    "enhance:pretty": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.txt --format pretty",
+    "enhance:minimal": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-minimal.json --format minimal",
+    "enhance:screenshots": "ts-node cucumber-enhancer.ts --latest ./reports enhanced-report.json --screenshots ./test-failures",
     "build": "tsc",
     "start": "node dist/cucumber-enhancer.js"
   },
