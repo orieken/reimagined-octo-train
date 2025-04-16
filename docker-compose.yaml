@@ -33,7 +33,26 @@ services:
       - qdrant-data:/qdrant/storage
     restart: unless-stopped
 
+  postgres:
+    container_name: postgres
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=friday_service
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=friday
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U friday_service -d friday"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   ollama: {}
   open-webui: {}
   qdrant-data: {}
+  postgres-data: {}
