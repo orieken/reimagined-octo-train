@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Path
 from typing import List, Dict, Any, Optional
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from pydantic import BaseModel, Field, validator, root_validator
 
@@ -10,7 +10,7 @@ from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
 
-from app.models import(
+from app.models import (
     ReportResponse, SuccessResponse, BuildInfo, ProcessingStatusResponse, Report, TestStep,
     TestCase, TextChunk, ProcessReportResponse  # Added ProcessReportResponse import
 )
@@ -30,8 +30,8 @@ class CucumberMetadata(BaseModel):
     @validator('timestamp')
     def validate_timestamp(cls, v):
         try:
-            datetime.fromisoformat(v.replace('Z', '+00:00'))
-            return v
+            # Make sure to parse ISO format timestamp with timezone info
+            return datetime.fromisoformat(v.replace('Z', '+00:00')).isoformat()
         except ValueError:
             raise ValueError("timestamp must be in ISO8601 format")
 
@@ -97,22 +97,6 @@ class CucumberFeature(BaseModel):
     elements: List[CucumberScenario]
 
 
-class CucumberMetadata(BaseModel):
-    project: str
-    branch: str
-    commit: str
-    timestamp: str
-    runner: str
-
-    @validator('timestamp')
-    def validate_timestamp(cls, v):
-        try:
-            datetime.fromisoformat(v.replace('Z', '+00:00'))
-            return v
-        except ValueError:
-            raise ValueError("timestamp must be in ISO8601 format")
-
-
 # We need to handle both direct Cucumber JSON and the Friday CLI format
 class CucumberReportRequest(BaseModel):
     metadata: Optional[CucumberMetadata] = None
@@ -162,7 +146,7 @@ async def process_cucumber_report(
                 "project": project,
                 "branch": branch or "main",
                 "commit": commit or "unknown",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "runner": runner or "cucumber"
             }
 
@@ -199,7 +183,7 @@ async def process_cucumber_report(
                 message=f"Report processing started for {metadata['project']} ({metadata['branch']})",
                 report_id=test_run.id,
                 task_id=task_id,
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now(timezone.utc).isoformat()
             )
         else:
             report_id = await orchestrator.process_report(test_run)
@@ -207,7 +191,7 @@ async def process_cucumber_report(
                 status="success",
                 message=f"Report processed successfully for {metadata['project']} ({metadata['branch']})",
                 report_id=report_id,
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now(timezone.utc).isoformat()
             )
     except ValueError as e:
         logger.error(f"Validation error processing Cucumber report: {str(e)}")
@@ -241,7 +225,7 @@ async def process_build_info(
 
         return SuccessResponse(
             message=f"Build information processed successfully with ID {build_id}",
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now(timezone.utc).isoformat()
         )
     except Exception as e:
         logger.error(f"Error processing build info: {str(e)}")
@@ -285,7 +269,7 @@ async def process_document(
 
         return SuccessResponse(
             message=f"Document processed successfully into {len(chunk_ids)} chunks",
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now(timezone.utc).isoformat()
         )
     except HTTPException:
         raise
@@ -322,7 +306,7 @@ async def get_processing_status(
             status=status.get("status", "unknown"),
             progress=status.get("progress", 0.0),
             message=status.get("message", ""),
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now(timezone.utc).isoformat()
         )
     except HTTPException:
         raise
@@ -368,7 +352,7 @@ def convert_enhanced_cucumber_to_domain(request: CucumberReportRequest, metadata
             "project": "unknown",
             "branch": "main",
             "commit": "unknown",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "runner": "cucumber"
         }
 
@@ -473,6 +457,7 @@ def convert_enhanced_cucumber_to_domain(request: CucumberReportRequest, metadata
                 step_embeddings = []
                 if hasattr(step_json, 'embeddings') and step_json.embeddings:
                     for embedding in step_json.embeddings:
+                        # Create StepEmbedding object
                         step_embeddings.append({
                             "data": embedding.data,
                             "mime_type": embedding.mime_type
@@ -487,7 +472,7 @@ def convert_enhanced_cucumber_to_domain(request: CucumberReportRequest, metadata
                     error_message=error_message,
                     stack_trace=stack_trace,
                     duration=duration,
-                    embeddings=step_embeddings
+                    embeddings=step_embeddings if step_embeddings else None
                 )
 
                 steps.append(step)
@@ -507,7 +492,7 @@ def convert_enhanced_cucumber_to_domain(request: CucumberReportRequest, metadata
                 duration=scenario_duration,
                 tags=tags,
                 is_flaky=is_flaky,
-                embeddings=scenario_embeddings
+                embeddings=scenario_embeddings if scenario_embeddings else None
             )
 
             test_cases.append(scenario)
@@ -520,10 +505,24 @@ def convert_enhanced_cucumber_to_domain(request: CucumberReportRequest, metadata
     elif passed_count == 0 and len(test_cases) > 0:
         overall_status = "SKIPPED"
 
-    # Format timestamp
-    timestamp = metadata.get("timestamp", datetime.now().isoformat())
-    if timestamp.endswith('Z'):
-        timestamp = timestamp.replace('Z', '+00:00')
+    # Format timestamp - ensure we have a consistent timezone-aware format
+    timestamp = metadata.get("timestamp", datetime.now(timezone.utc).isoformat())
+
+    # Handle ISO format with 'Z' at the end (UTC marker)
+    if isinstance(timestamp, str):
+        if timestamp.endswith('Z'):
+            timestamp = timestamp.replace('Z', '+00:00')
+
+        # Parse string to datetime with timezone info
+        try:
+            parsed_timestamp = datetime.fromisoformat(timestamp)
+            # Ensure timestamp has timezone info
+            if parsed_timestamp.tzinfo is None:
+                parsed_timestamp = parsed_timestamp.replace(tzinfo=timezone.utc)
+            timestamp = parsed_timestamp.isoformat()
+        except ValueError:
+            # If parsing fails, use current time with UTC timezone
+            timestamp = datetime.now(timezone.utc).isoformat()
 
     # Create the report name
     report_name = f"{metadata.get('project')} - {metadata.get('branch')}"
@@ -558,7 +557,7 @@ def convert_cucumber_to_domain(cucumber_json: Dict[str, Any]) -> Report:
     report_id = str(uuid.uuid4())
 
     # Extract basic report info
-    timestamp = cucumber_json.get("timestamp", datetime.now().isoformat())
+    timestamp = cucumber_json.get("timestamp", datetime.now(timezone.utc).isoformat())
     name = cucumber_json.get("name", f"Cucumber Report {timestamp}")
 
     # Process features
@@ -620,6 +619,15 @@ def convert_cucumber_to_domain(cucumber_json: Dict[str, Any]) -> Report:
                 # Get error message
                 error_message = result.get("error_message")
 
+                # Check for embeddings
+                step_embeddings = []
+                if "embeddings" in step_json:
+                    for embedding in step_json["embeddings"]:
+                        step_embeddings.append({
+                            "data": embedding.get("data", ""),
+                            "mime_type": embedding.get("mime_type", "text/plain")
+                        })
+
                 # Create step object
                 step = TestStep(
                     id=str(uuid.uuid4()),
@@ -627,7 +635,8 @@ def convert_cucumber_to_domain(cucumber_json: Dict[str, Any]) -> Report:
                     name=step_name,
                     status=status,
                     error_message=error_message,
-                    duration=duration
+                    duration=duration,
+                    embeddings=step_embeddings if step_embeddings else None
                 )
 
                 steps.append(step)
@@ -656,6 +665,18 @@ def convert_cucumber_to_domain(cucumber_json: Dict[str, Any]) -> Report:
         overall_status = "FAILED"
     elif passed_count == 0:
         overall_status = "SKIPPED"
+
+    # Ensure timestamp is timezone-aware
+    if isinstance(timestamp, str):
+        if timestamp.endswith('Z'):
+            timestamp = timestamp.replace('Z', '+00:00')
+        try:
+            parsed_timestamp = datetime.fromisoformat(timestamp)
+            if parsed_timestamp.tzinfo is None:
+                parsed_timestamp = parsed_timestamp.replace(tzinfo=timezone.utc)
+            timestamp = parsed_timestamp.isoformat()
+        except ValueError:
+            timestamp = datetime.now(timezone.utc).isoformat()
 
     # Create the report
     return Report(

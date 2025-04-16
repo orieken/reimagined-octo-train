@@ -1,6 +1,6 @@
 # schemas.py
 from typing import Dict, List, Optional, Any, Union
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field, ConfigDict
 
 from .search_analysis import TrendAnalysis
@@ -11,6 +11,18 @@ from .base import (
     ReportType,
     BuildEnvironment, ReportFrequency
 )
+
+
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
+
+
+# Helper function to get ISO formatted string with timezone info
+def utcnow_iso():
+    """Return current UTC datetime as ISO 8601 string with timezone information."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 # Project-related Schemas
@@ -41,8 +53,8 @@ class ProjectCreate(ProjectBase):
 class ProjectResponse(ProjectBase):
     """Response model for project details."""
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
 
 
 # Test Run Schemas
@@ -78,8 +90,8 @@ class TestRunResponse(TestRunBase):
     id: int
     project_id: int
     build_id: Optional[int] = None
-    start_time: datetime
-    end_time: Optional[datetime] = None
+    start_time: datetime  # Will be timezone-aware
+    end_time: Optional[datetime] = None  # Will be timezone-aware
     duration: Optional[float] = None
     total_tests: int = 0
     passed_tests: int = 0
@@ -87,8 +99,8 @@ class TestRunResponse(TestRunBase):
     skipped_tests: int = 0
     error_tests: int = 0
     success_rate: Optional[float] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
 
 
 # Feature Schemas
@@ -121,8 +133,8 @@ class FeatureResponse(Feature):
     """Response model for feature details."""
     id: int
     project_id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
 
 
 # Scenario Schemas
@@ -176,8 +188,8 @@ class StepBase(BaseModel):
 class StepCreate(StepBase):
     """Model for creating a new step."""
     scenario_id: int
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: Optional[datetime] = None  # Will be timezone-aware if provided
+    end_time: Optional[datetime] = None    # Will be timezone-aware if provided
     duration: Optional[float] = None
 
 
@@ -185,11 +197,11 @@ class StepResponse(StepBase):
     """Response model for step details."""
     id: int
     scenario_id: int
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: Optional[datetime] = None  # Will be timezone-aware
+    end_time: Optional[datetime] = None    # Will be timezone-aware
     duration: Optional[float] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
 
 
 # Tag Schemas
@@ -217,8 +229,8 @@ class TagCreate(TagBase):
 class TagResponse(TagBase):
     """Response model for tag details."""
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
 
 
 # Report Schemas
@@ -255,11 +267,11 @@ class ReportResponse(ReportBase):
     """Response model for report details."""
     id: str
     status: ReportStatus
-    generated_at: Optional[datetime] = None
+    generated_at: Optional[datetime] = None  # Will be timezone-aware
     file_path: Optional[str] = None
     error_message: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
 
 
 # Statistics and Summary Schemas
@@ -311,8 +323,8 @@ class ScenarioCreate(Scenario):
     test_run_id: int
     feature_id: Optional[int] = None
     tags: Optional[List[str]] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: Optional[datetime] = None  # Will be timezone-aware if provided
+    end_time: Optional[datetime] = None    # Will be timezone-aware if provided
     duration: Optional[float] = None
 
 class BulkCreateResponse(BaseModel):
@@ -351,7 +363,7 @@ class CreateScheduleRequest(BaseModel):
                     "end_date": "2023-01-31"
                 },
                 "frequency": "monthly",
-                "next_run": "2023-02-01T00:00:00Z"
+                "next_run": "2023-02-01T00:00:00Z"  # Note the Z for UTC
             }
         }
     )
@@ -381,8 +393,8 @@ class TestResultsTag(BaseModel):
     name: str
     description: Optional[str] = None
     color: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None  # Will be timezone-aware
+    updated_at: Optional[datetime] = None  # Will be timezone-aware
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -420,7 +432,7 @@ class TestFlakiness(BaseModel):
                     {
                         "run_id": "run-001",
                         "status": "PASSED",
-                        "timestamp": "2023-06-15T10:30:00Z"
+                        "timestamp": "2023-06-15T10:30:00Z"  # Note the Z for UTC
                     }
                 ]
             }
@@ -440,7 +452,7 @@ class TrendPoint(BaseModel):
     model_config = ConfigDict(
         json_schema_extra = {
             "example": {
-                "timestamp": "2023-06-15T10:30:00Z",
+                "timestamp": "2023-06-15T10:30:00Z",  # Note the Z for UTC
                 "report_id": "report-123",
                 "total_tests": 100,
                 "passed_tests": 90,
@@ -504,7 +516,7 @@ class PerformanceTestData(BaseModel):
                     {
                         "run_id": "run-001",
                         "duration": 245.3,
-                        "timestamp": "2023-06-15T10:30:00Z"
+                        "timestamp": "2023-06-15T10:30:00Z"  # Note the Z for UTC
                     }
                 ]
             }
@@ -550,14 +562,14 @@ class AnalyticsResponse(BaseModel):
     correlations: List[FailureCorrelation]
     days_analyzed: int
     environment: Optional[str] = None
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = Field(default_factory=utcnow_iso)
 
     model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "trends": {
-                    "start_date": "2023-01-01T00:00:00",
-                    "end_date": "2023-06-30T23:59:59",
+                    "start_date": "2023-01-01T00:00:00Z",  # Note the Z for UTC
+                    "end_date": "2023-06-30T23:59:59Z",    # Note the Z for UTC
                     "pass_rate_trend": {
                         "January": 0.85,
                         "February": 0.90,
@@ -599,7 +611,7 @@ class AnalyticsResponse(BaseModel):
                 ],
                 "days_analyzed": 30,
                 "environment": "staging",
-                "timestamp": "2023-07-01T00:00:00Z"
+                "timestamp": "2023-07-01T00:00:00Z"  # Note the Z for UTC
             }
         }
     )
@@ -613,8 +625,8 @@ class ReportTemplate(BaseModel):
     format: ReportFormat
     template_data: Dict[str, Any]
     created_by: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None  # Will be timezone-aware
+    updated_at: Optional[datetime] = None  # Will be timezone-aware
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -629,8 +641,8 @@ class ReportTemplate(BaseModel):
                     "include_charts": True
                 },
                 "created_by": "admin",
-                "created_at": "2023-06-15T10:30:00Z",
-                "updated_at": "2023-06-15T10:30:00Z"
+                "created_at": "2023-06-15T10:30:00Z",  # Note the Z for UTC
+                "updated_at": "2023-06-15T10:30:00Z"   # Note the Z for UTC
             }
         }
     )
@@ -645,10 +657,10 @@ class ReportSchedule(BaseModel):
     enabled: bool = True
     parameters: Optional[Dict[str, Any]] = None
     recipients: Optional[List[str]] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    last_run: Optional[datetime] = None
-    next_run: Optional[datetime] = None
+    created_at: Optional[datetime] = None  # Will be timezone-aware
+    updated_at: Optional[datetime] = None  # Will be timezone-aware
+    last_run: Optional[datetime] = None    # Will be timezone-aware
+    next_run: Optional[datetime] = None    # Will be timezone-aware
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -664,10 +676,10 @@ class ReportSchedule(BaseModel):
                     "report_type": "performance"
                 },
                 "recipients": ["admin@company.com", "qa@company.com"],
-                "created_at": "2023-06-15T10:30:00Z",
-                "updated_at": "2023-06-15T10:30:00Z",
-                "last_run": "2023-06-30T00:00:00Z",
-                "next_run": "2023-07-01T00:00:00Z"
+                "created_at": "2023-06-15T10:30:00Z",   # Note the Z for UTC
+                "updated_at": "2023-06-15T10:30:00Z",   # Note the Z for UTC
+                "last_run": "2023-06-30T00:00:00Z",     # Note the Z for UTC
+                "next_run": "2023-07-01T00:00:00Z"      # Note the Z for UTC
             }
         }
     )
@@ -691,7 +703,7 @@ class ResultsData(BaseModel):
                 "failed_scenarios": 10,
                 "skipped_scenarios": 5,
                 "pass_rate": 0.85,
-                "last_updated": "2023-06-15T10:30:00Z",
+                "last_updated": "2023-06-15T10:30:00Z",  # Note the Z for UTC
                 "features": [
                     {
                         "name": "User Authentication",
@@ -727,7 +739,7 @@ class ResultsResponse(BaseModel):
                     "failed_scenarios": 10,
                     "skipped_scenarios": 5,
                     "pass_rate": 0.85,
-                    "last_updated": "2023-06-15T10:30:00Z",
+                    "last_updated": "2023-06-15T10:30:00Z",  # Note the Z for UTC
                     "features": [
                         {
                             "name": "User Authentication",
@@ -795,8 +807,8 @@ class FeatureResponse(FeatureBase):
     """Response model for feature details."""
     id: int
     project_id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
 
 
 # Test Run Models
@@ -834,8 +846,8 @@ class TestRunResponse(TestRun):
     id: int
     project_id: int
     build_id: Optional[int] = None
-    start_time: datetime
-    end_time: Optional[datetime] = None
+    start_time: datetime  # Will be timezone-aware
+    end_time: Optional[datetime] = None  # Will be timezone-aware
     duration: Optional[float] = None
     total_tests: int = 0
     passed_tests: int = 0
@@ -843,8 +855,8 @@ class TestRunResponse(TestRun):
     skipped_tests: int = 0
     error_tests: int = 0
     success_rate: Optional[float] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
 
 
 # Scenario Models
@@ -879,8 +891,8 @@ class ScenarioCreate(ScenarioBase):
     test_run_id: int
     feature_id: Optional[int] = None
     tags: Optional[List[str]] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: Optional[datetime] = None  # Will be timezone-aware if provided
+    end_time: Optional[datetime] = None    # Will be timezone-aware if provided
     duration: Optional[float] = None
 
 
@@ -889,11 +901,11 @@ class ScenarioResponse(ScenarioBase):
     id: int
     test_run_id: int
     feature_id: Optional[int] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: Optional[datetime] = None  # Will be timezone-aware
+    end_time: Optional[datetime] = None    # Will be timezone-aware
     duration: Optional[float] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime  # Will be timezone-aware
+    updated_at: datetime  # Will be timezone-aware
     tags: List[str] = []
 
     model_config = ConfigDict(
@@ -904,11 +916,11 @@ class ScenarioResponse(ScenarioBase):
                 "feature_id": 50,
                 "name": "User Login Scenario",
                 "status": "PASSED",
-                "start_time": "2023-06-15T10:25:00Z",
-                "end_time": "2023-06-15T10:30:00Z",
+                "start_time": "2023-06-15T10:25:00Z",  # Note the Z for UTC
+                "end_time": "2023-06-15T10:30:00Z",    # Note the Z for UTC
                 "duration": 300.5,
-                "created_at": "2023-06-15T10:20:00Z",
-                "updated_at": "2023-06-15T10:30:00Z",
+                "created_at": "2023-06-15T10:20:00Z",  # Note the Z for UTC
+                "updated_at": "2023-06-15T10:30:00Z",  # Note the Z for UTC
                 "tags": ["smoke", "login"]
             }
         }

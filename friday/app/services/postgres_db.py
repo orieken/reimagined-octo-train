@@ -4,7 +4,7 @@ import asyncio
 import json
 import uuid
 import functools
-from datetime import datetime
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -78,7 +78,20 @@ class PostgresDBService:
             # Convert timestamp string to datetime if it's a string
             timestamp = report.timestamp
             if isinstance(timestamp, str):
-                timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                try:
+                    timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                except ValueError:
+                    timestamp = datetime.now(timezone.utc)
+            elif isinstance(timestamp, datetime):
+                # Ensure datetime is timezone-aware
+                if timestamp.tzinfo is None:
+                    timestamp = timestamp.replace(tzinfo=timezone.utc)
+            else:
+                timestamp = datetime.now(timezone.utc)
+
+            # Use consistent timezone handling for all datetime objects
+            created_at = datetime.now(timezone.utc)
+            updated_at = datetime.now(timezone.utc)
 
             # Calculate success rate
             total_scenarios = len(report.scenarios)
@@ -110,8 +123,8 @@ class PostgresDBService:
                 "branch": metadata.get("branch", "main"),
                 "commit_hash": metadata.get("commit", None),
                 "meta_data": json.dumps(metadata),
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": created_at,
+                "updated_at": updated_at
             }
 
             # Check if the project exists, create it if it doesn't
@@ -141,8 +154,8 @@ class PostgresDBService:
                     "repository_url": metadata.get("repository_url", None),
                     "active": True,
                     "meta_data": json.dumps({"auto_created": True, "source": "cucumber_processor"}),
-                    "created_at": datetime.now(),
-                    "updated_at": datetime.now()
+                    "created_at": created_at,
+                    "updated_at": updated_at
                 }
 
                 try:
@@ -213,8 +226,8 @@ class PostgresDBService:
                     "branch": metadata.get("branch", "main"),
                     "commit_hash": metadata.get("commit", None),
                     "meta_data": json.dumps(metadata),
-                    "created_at": datetime.now(),
-                    "updated_at": datetime.now()
+                    "created_at": created_at,
+                    "updated_at": updated_at
                 }
 
                 result = await session.execute(text(query), params)
@@ -361,8 +374,8 @@ class PostgresDBService:
                     "name": feature_name,
                     "description": "",
                     "project_id": project_id,  # Use the resolved project_id
-                    "created_at": datetime.now(),
-                    "updated_at": datetime.now()
+                    "created_at": datetime.now().replace(tzinfo=timezone.utc),
+                    "updated_at": datetime.now().replace(tzinfo=timezone.utc)
                 }
                 result = await session.execute(text(feature_insert), feature_params)
                 feature_id = result.scalar()
@@ -570,8 +583,8 @@ class PostgresDBService:
                     "repository_url": metadata.get("repository_url", None),
                     "active": True,
                     "meta_data": json.dumps({"auto_created": True, "source": "build_info_processor"}),
-                    "created_at": datetime.now(),
-                    "updated_at": datetime.now()
+                    "created_at": datetime.now().replace(tzinfo=timezone.utc),
+                    "updated_at": datetime.now().replace(tzinfo=timezone.utc)
                 }
 
                 try:
@@ -595,8 +608,8 @@ class PostgresDBService:
                 "commit_hash": build_info.commit_hash if hasattr(build_info, 'commit_hash') else None,
                 "environment": build_info.environment if hasattr(build_info, 'environment') else "dev",
                 "meta_data": json.dumps(metadata),
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": datetime.now().replace(tzinfo=timezone.utc),
+                "updated_at": datetime.now().replace(tzinfo=timezone.utc)
             }
 
             # Insert the build info
@@ -665,8 +678,8 @@ class PostgresDBService:
                     "repository_url": metadata.get("repository_url", None),
                     "active": True,
                     "meta_data": json.dumps({"auto_created": True, "source": "feature_processor"}),
-                    "created_at": datetime.now(),
-                    "updated_at": datetime.now()
+                    "created_at": datetime.now().replace(tzinfo=timezone.utc),
+                    "updated_at": datetime.now().replace(tzinfo=timezone.utc)
                 }
 
                 try:
@@ -684,8 +697,8 @@ class PostgresDBService:
                 "project_id": project_id,
                 "file_path": feature.file_path if hasattr(feature, 'file_path') else None,
                 "tags": feature.tags if hasattr(feature, 'tags') else [],
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": datetime.now().replace(tzinfo=timezone.utc),
+                "updated_at": datetime.now().replace(tzinfo=timezone.utc)
             }
 
             # Insert the feature

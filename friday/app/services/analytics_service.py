@@ -6,11 +6,33 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy import func, distinct, and_, or_, case
 from sqlalchemy.orm import Session, aliased
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.models.database import TestCase, TestReport
 
 logger = logging.getLogger("friday.analytics")
+
+
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
+
+
+# Helper function to ensure datetime objects are timezone-aware
+def ensure_timezone_aware(dt: datetime) -> datetime:
+    """
+    Ensure datetime object has timezone info, adding UTC if not present.
+
+    Args:
+        dt: The datetime object to check
+
+    Returns:
+        Timezone-aware datetime object
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 def get_test_failure_metrics(
@@ -25,8 +47,8 @@ def get_test_failure_metrics(
 
     Args:
         db: Database session
-        start_date: Start date for metrics
-        end_date: End date for metrics
+        start_date: Start date for metrics (will be made timezone-aware if not already)
+        end_date: End date for metrics (will be made timezone-aware if not already)
         project_id: Optional project ID to filter by
         branch: Optional branch to filter by
 
@@ -43,6 +65,10 @@ def get_test_failure_metrics(
             ...
         ]
     """
+    # Ensure dates are timezone-aware
+    start_date = ensure_timezone_aware(start_date)
+    end_date = ensure_timezone_aware(end_date)
+
     # This implementation depends on your actual database models
     # Here's a placeholder that you'll need to adapt
 
@@ -111,8 +137,8 @@ def get_build_performance_metrics(
 
     Args:
         db: Database session
-        start_date: Start date for metrics
-        end_date: End date for metrics
+        start_date: Start date for metrics (will be made timezone-aware if not already)
+        end_date: End date for metrics (will be made timezone-aware if not already)
         project_id: Optional project ID to filter by
         branch: Optional branch to filter by
 
@@ -129,6 +155,10 @@ def get_build_performance_metrics(
             ...
         ]
     """
+    # Ensure dates are timezone-aware
+    start_date = ensure_timezone_aware(start_date)
+    end_date = ensure_timezone_aware(end_date)
+
     try:
         # Base query for build metrics
         query = db.query(
@@ -191,8 +221,8 @@ def get_top_failing_tests(
 
     Args:
         db: Database session
-        start_date: Start date for metrics
-        end_date: End date for metrics
+        start_date: Start date for metrics (will be made timezone-aware if not already)
+        end_date: End date for metrics (will be made timezone-aware if not already)
         project_id: Optional project ID to filter by
         limit: Maximum number of tests to return
 
@@ -202,12 +232,16 @@ def get_top_failing_tests(
             {
                 "test_name": "TestLoginFeature",
                 "failure_count": 15,
-                "last_failed_at": "2023-06-01T14:30:15",
+                "last_failed_at": "2023-06-01T14:30:15Z",  # With UTC timezone
                 "failure_pattern": "Authentication token invalid"
             },
             ...
         ]
     """
+    # Ensure dates are timezone-aware
+    start_date = ensure_timezone_aware(start_date)
+    end_date = ensure_timezone_aware(end_date)
+
     try:
         # Query to count failures by test name
         query = db.query(
@@ -235,10 +269,17 @@ def get_top_failing_tests(
         # Format results
         formatted_results = []
         for test_name, failure_count, last_failed_at, failure_pattern in results:
+            # Ensure datetime is timezone-aware before converting to ISO format
+            if last_failed_at:
+                last_failed_at = ensure_timezone_aware(last_failed_at)
+                last_failed_at_iso = last_failed_at.isoformat()
+            else:
+                last_failed_at_iso = None
+
             formatted_results.append({
                 "test_name": test_name,
                 "failure_count": failure_count,
-                "last_failed_at": last_failed_at.isoformat() if last_failed_at else None,
+                "last_failed_at": last_failed_at_iso,
                 "failure_pattern": failure_pattern
             })
 
@@ -246,11 +287,12 @@ def get_top_failing_tests(
     except Exception as e:
         logger.error(f"Error getting top failing tests: {e}")
         # Return dummy data for development
+        now = utcnow()  # Use timezone-aware UTC now
         return [
             {
                 "test_name": f"Test{i}Feature",
                 "failure_count": 15 - i,
-                "last_failed_at": datetime.utcnow().isoformat(),
+                "last_failed_at": now.isoformat(),
                 "failure_pattern": "Test error pattern"
             }
             for i in range(min(5, limit))
@@ -270,8 +312,8 @@ def get_flaky_tests(
 
     Args:
         db: Database session
-        start_date: Start date for metrics
-        end_date: End date for metrics
+        start_date: Start date for metrics (will be made timezone-aware if not already)
+        end_date: End date for metrics (will be made timezone-aware if not already)
         project_id: Optional project ID to filter by
         min_flake_rate: Minimum flake rate to consider a test flaky
         limit: Maximum number of tests to return
@@ -284,11 +326,15 @@ def get_flaky_tests(
                 "total_runs": 20,
                 "failed_runs": 8,
                 "flake_rate": 0.4,
-                "last_flake_at": "2023-06-01T15:45:30"
+                "last_flake_at": "2023-06-01T15:45:30Z"  # With UTC timezone
             },
             ...
         ]
     """
+    # Ensure dates are timezone-aware
+    start_date = ensure_timezone_aware(start_date)
+    end_date = ensure_timezone_aware(end_date)
+
     try:
         # Example implementation assuming TestCase model exists
         # First, get counts of passes and fails for each test
@@ -329,13 +375,20 @@ def get_flaky_tests(
 
             # Only include tests above the minimum flake rate
             if flake_rate >= min_flake_rate:
+                # Ensure datetime is timezone-aware before converting to ISO format
+                if last_run_at:
+                    last_run_at = ensure_timezone_aware(last_run_at)
+                    last_run_at_iso = last_run_at.isoformat()
+                else:
+                    last_run_at_iso = None
+
                 flaky_tests.append({
                     "test_name": test_name,
                     "total_runs": total_runs,
                     "failed_runs": failed_runs,
                     "passed_runs": passed_runs,
                     "flake_rate": round(flake_rate, 3),
-                    "last_flake_at": last_run_at.isoformat() if last_run_at else None
+                    "last_flake_at": last_run_at_iso
                 })
 
         # Sort by flake rate (descending) and limit results
@@ -344,6 +397,7 @@ def get_flaky_tests(
     except Exception as e:
         logger.error(f"Error getting flaky tests: {e}")
         # Return dummy data for development
+        now = utcnow()  # Use timezone-aware UTC now
         return [
             {
                 "test_name": f"FlakeTest{i}",
@@ -351,7 +405,7 @@ def get_flaky_tests(
                 "failed_runs": 5,
                 "passed_runs": 5,
                 "flake_rate": 0.5,
-                "last_flake_at": datetime.utcnow().isoformat()
+                "last_flake_at": now.isoformat()
             }
             for i in range(min(5, limit))
         ]
@@ -380,7 +434,7 @@ def calculate_build_health_score(
         Health score from 0-100
     """
     try:
-        end_date = datetime.utcnow()
+        end_date = utcnow()  # Use timezone-aware UTC now
         start_date = end_date - timedelta(days=days)
 
         # Weights for each factor
@@ -524,7 +578,7 @@ def get_dashboard_data(
     Returns:
         Dictionary with all dashboard data
     """
-    end_date = datetime.utcnow()
+    end_date = utcnow()  # Use timezone-aware UTC now
     start_date = end_date - timedelta(days=days)
 
     # Gather all metrics

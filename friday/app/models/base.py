@@ -1,8 +1,7 @@
 # base.py
-from enum import Enum, auto
+from enum import Enum
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
 import uuid
 
 

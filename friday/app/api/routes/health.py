@@ -9,6 +9,7 @@ import os
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
+from app.services import datetime_service as dt
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ async def health_check(
             "platform": platform.platform(),
             "memory_usage": get_memory_usage()
         },
-        "timestamp": datetime.now().isoformat()
+        "timestamp": dt.isoformat_utc(dt.now_utc())
     }
 
     # Check Vector DB

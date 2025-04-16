@@ -14,6 +14,8 @@ from app.api.dependencies import get_orchestrator_service
 
 from app.models import Report
 from app.models.schemas import CreateScheduleRequest, CreateReportRequest, ReportTemplate, ReportSchedule
+from app.services import datetime_service as dt
+
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +214,7 @@ async def schedule_report(
             parameters=request.parameters,
             frequency=request.frequency,
             next_run=request.next_run,
-            created_at=datetime.now().isoformat()
+            created_at=dt.isoformat_utc(dt.now_utc())
         )
 
         # Schedule report

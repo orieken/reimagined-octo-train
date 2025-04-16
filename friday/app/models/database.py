@@ -7,7 +7,7 @@ mapping Python classes to database tables with complex relationships
 and advanced column types.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, DateTime,
@@ -18,6 +18,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
+
+# Helper function to always get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
 
 # Association Tables
 test_run_tags = Table(
@@ -83,8 +88,8 @@ class Project(Base):
     active = Column(Boolean, default=True, nullable=False)
 
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
     meta_data = Column(JSONB, nullable=True)
 
     # Relationships
@@ -109,8 +114,8 @@ class TestRun(Base):
     status = Column(Enum(TestStatus), nullable=False, default=TestStatus.RUNNING)
 
     # Timing and performance
-    start_time = Column(DateTime, default=datetime.utcnow, nullable=False)
-    end_time = Column(DateTime, nullable=True)
+    start_time = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=True)
     duration = Column(Float, nullable=True)  # in seconds
 
     # Statistics
@@ -127,8 +132,8 @@ class TestRun(Base):
     commit_hash = Column(String(40), nullable=True)
 
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
     meta_data = Column(JSONB, nullable=True)
 
     # Relationships
@@ -152,8 +157,8 @@ class Scenario(Base):
     status = Column(Enum(TestStatus), nullable=False)
 
     # Timing
-    start_time = Column(DateTime, nullable=True)
-    end_time = Column(DateTime, nullable=True)
+    start_time = Column(DateTime(timezone=True), nullable=True)
+    end_time = Column(DateTime(timezone=True), nullable=True)
     duration = Column(Float, nullable=True)  # in seconds
 
     # Error handling
@@ -163,8 +168,8 @@ class Scenario(Base):
     # Metadata
     parameters = Column(JSONB, nullable=True)
     meta_data = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     test_run = relationship("TestRun", back_populates="scenarios")
@@ -197,8 +202,8 @@ class Step(Base):
     status = Column(Enum(TestStatus), nullable=False)
 
     # Timing
-    start_time = Column(DateTime, nullable=True)
-    end_time = Column(DateTime, nullable=True)
+    start_time = Column(DateTime(timezone=True), nullable=True)
+    end_time = Column(DateTime(timezone=True), nullable=True)
     duration = Column(Float, nullable=True)  # in seconds
 
     # Error handling
@@ -211,8 +216,8 @@ class Step(Base):
     order = Column(Integer, nullable=False)
 
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     scenario = relationship("Scenario", back_populates="steps")
@@ -234,8 +239,8 @@ class Feature(Base):
 
     # Metadata
     tags = Column(ARRAY(String), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     project = relationship("Project", back_populates="features")
@@ -256,8 +261,8 @@ class BuildInfo(Base):
     status = Column(String(50), nullable=False)
 
     # Timing
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=True)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=True)
     duration = Column(Float, nullable=True)  # in seconds
 
     # SCM details
@@ -273,8 +278,8 @@ class BuildInfo(Base):
 
     # Metadata
     meta_data = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     project = relationship("Project", back_populates="build_infos")
@@ -293,13 +298,13 @@ class TestReport(Base):
     # Report details
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    execution_date = Column(DateTime, nullable=True)
+    execution_date = Column(DateTime(timezone=True), nullable=True)
     status = Column(String(50), nullable=True)
 
     # Metadata
     meta_data = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     project = relationship("Project", back_populates="test_reports")
@@ -319,14 +324,14 @@ class TestCase(Base):
     status = Column(String(50), nullable=True)
 
     # Execution details
-    execution_time = Column(DateTime, nullable=True)
+    execution_time = Column(DateTime(timezone=True), nullable=True)
     duration = Column(Integer, nullable=True)  # in milliseconds
     is_automated = Column(Boolean, default=True, nullable=False)
 
     # Metadata
     meta_data = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     test_report = relationship("TestReport", back_populates="test_cases")
@@ -342,8 +347,8 @@ class TestResultsTag(Base):
     color = Column(String(7), nullable=True)  # Hex color code
 
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     test_runs = relationship("TestRun", secondary=test_run_tags, back_populates="tags")
@@ -365,9 +370,9 @@ class HealthMetric(Base):
     status = Column(String(50), nullable=True)
 
     # Metadata
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     meta_data = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     # Relationships
     project = relationship("Project", back_populates="health_metrics")
@@ -386,9 +391,9 @@ class BuildMetric(Base):
     metric_value = Column(Float, nullable=False)
 
     # Metadata
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     meta_data = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     # Relationships
     build = relationship("BuildInfo", back_populates="metrics")
@@ -411,8 +416,8 @@ class ReportTemplate(Base):
 
     # Metadata
     created_by = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     reports = relationship("Report", back_populates="template")
@@ -439,10 +444,10 @@ class ReportSchedule(Base):
     recipients = Column(ARRAY(String), nullable=True)
 
     # Timing
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    last_run = Column(DateTime, nullable=True)
-    next_run = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+    last_run = Column(DateTime(timezone=True), nullable=True)
+    next_run = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     template = relationship("ReportTemplate", back_populates="schedules")
@@ -464,7 +469,7 @@ class Report(Base):
     format = Column(Enum(ReportFormat), nullable=False)
 
     # File details
-    generated_at = Column(DateTime, nullable=True)
+    generated_at = Column(DateTime(timezone=True), nullable=True)
     file_path = Column(String(255), nullable=True)
     file_size = Column(Integer, nullable=True)  # in bytes
 
@@ -473,8 +478,8 @@ class Report(Base):
     error_message = Column(Text, nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     template = relationship("ReportTemplate", back_populates="reports")
@@ -498,11 +503,11 @@ class SearchQuery(Base):
     session_id = Column(String(100), nullable=True)
 
     # Performance tracking
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     duration = Column(Float, nullable=True)  # in milliseconds
 
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
 class AnalysisRequest(Base):
@@ -520,8 +525,8 @@ class AnalysisRequest(Base):
     user_id = Column(String(100), nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     results = relationship("AnalysisResult", back_populates="request")
@@ -539,7 +544,7 @@ class AnalysisResult(Base):
     summary = Column(Text, nullable=True)
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     # Relationships
     request = relationship("AnalysisRequest", back_populates="results")
@@ -562,5 +567,5 @@ class TextChunk(Base):
     quadrant_vector_id = Column(String(255), nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)

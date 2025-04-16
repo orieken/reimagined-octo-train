@@ -7,6 +7,8 @@ from fastapi import WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel
 from datetime import datetime
 
+from app.services import datetime_service as dt
+
 from starlette.websockets import WebSocketState
 
 # Configure logging
@@ -50,7 +52,7 @@ class ConnectionManager:
 
             # Register the new connection
             self.active_connections[client_id] = websocket
-            self.last_heartbeat[client_id] = datetime.now()
+            self.last_heartbeat[client_id] = dt.now_utc()
             self.connection_state[client_id] = True  # Mark as connected
 
             # Send welcome message
@@ -243,13 +245,13 @@ class ConnectionManager:
         Update the last heartbeat time for a client
         """
         if await self.is_connected(client_id):
-            self.last_heartbeat[client_id] = datetime.now()
+            self.last_heartbeat[client_id] = dt.now_utc()
 
     async def check_heartbeats(self, heartbeat_timeout: int = 60) -> None:
         """
         Check heartbeats and disconnect stale clients
         """
-        current_time = datetime.now()
+        current_time = dt.now_utc()
         clients_to_disconnect = []
 
         async with self.lock:
@@ -402,7 +404,7 @@ class NotificationManager:
         """
         try:
             # Add timestamp to the message
-            message["timestamp"] = datetime.now().isoformat()
+            message["timestamp"] = dt.isoformat_utc(dt.now_utc())
 
             # Broadcast the message
             sent_count = await self.connection_manager.broadcast(message, topic)

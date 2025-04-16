@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Path
 from typing import List, Dict, Any, Optional
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from app.config import settings
@@ -16,6 +16,18 @@ from app.models.responses import AnalysisResponse, ReportSummaryResponse, TestCa
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix=settings.API_PREFIX, tags=["analysis"])
+
+
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
+
+
+# Helper function to get ISO formatted string with timezone info
+def utcnow_iso():
+    """Return current UTC datetime as ISO 8601 string with timezone information."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 @router.post("/reports", response_model=ReportResponse)
@@ -41,7 +53,7 @@ async def upload_report(
                 status="accepted",
                 message="Report processing started",
                 report_id=report.id,
-                timestamp=datetime.now().isoformat()
+                timestamp=utcnow_iso()  # Use timezone-aware UTC ISO string
             )
         else:
             report_id = await orchestrator.process_report(report)
@@ -49,7 +61,7 @@ async def upload_report(
                 status="success",
                 message="Report processed successfully",
                 report_id=report_id,
-                timestamp=datetime.now().isoformat()
+                timestamp=utcnow_iso()  # Use timezone-aware UTC ISO string
             )
     except Exception as e:
         logger.error(f"Error processing report: {str(e)}")
@@ -111,9 +123,16 @@ async def analyze(
         logger.info(f"Analysis request: {request.query}")
         result = await orchestrator.analyze(request)
 
+        # Ensure result timestamp is timezone-aware
+        if hasattr(result, 'timestamp') and isinstance(result.timestamp, datetime):
+            timestamp_iso = result.timestamp.isoformat()
+        else:
+            # If timestamp is not a datetime object, use current UTC time
+            timestamp_iso = utcnow_iso()
+
         return AnalysisResponse(
             query=result.query,
-            timestamp=result.timestamp.isoformat(),
+            timestamp=timestamp_iso,
             recommendations=result.recommendations,
             related_items=result.related_items,
             summary=result.summary
@@ -144,7 +163,7 @@ async def get_report_summary(
         return ReportSummaryResponse(
             report_id=report_id,
             summary=summary,
-            timestamp=datetime.now().isoformat()
+            timestamp=utcnow_iso()  # Use timezone-aware UTC ISO string
         )
     except Exception as e:
         logger.error(f"Summary generation error: {str(e)}")
@@ -175,14 +194,17 @@ async def get_test_failure_insights(
                 test_case_id=test_case_id,
                 error=insights["error"],
                 recommendations=insights.get("recommendations", []),
-                timestamp=datetime.now().isoformat()
+                timestamp=utcnow_iso()  # Use timezone-aware UTC ISO string
             )
+
+        # Use provided timestamp if it exists, or current UTC time
+        timestamp = insights.get("timestamp", utcnow_iso())
 
         return TestCaseInsightsResponse(
             test_case_id=test_case_id,
             test_case=insights.get("test_case"),
             analysis=insights.get("analysis"),
-            timestamp=insights.get("timestamp", datetime.now().isoformat())
+            timestamp=timestamp
         )
     except Exception as e:
         logger.error(f"Insights generation error: {str(e)}")
@@ -216,7 +238,7 @@ async def generate_answer(
         return {
             "query": query,
             "answer": answer,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utcnow_iso()  # Use timezone-aware UTC ISO string
         }
     except Exception as e:
         logger.error(f"Answer generation error: {str(e)}")
@@ -241,7 +263,7 @@ async def health_check(
             "vector_db": "unknown",
             "llm": "unknown"
         },
-        "timestamp": datetime.now().isoformat()
+        "timestamp": utcnow_iso()  # Use timezone-aware UTC ISO string
     }
 
     # Check Vector DB

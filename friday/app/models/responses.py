@@ -1,7 +1,7 @@
 # responses.py
 from typing import List, Dict, Any, Optional, Union
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .base import (
     TestStatus,
@@ -23,12 +23,24 @@ from .schemas import (
 )
 
 
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
+
+
+# Helper function to get ISO formatted string with timezone info
+def utcnow_iso():
+    """Return current UTC datetime as ISO 8601 string with timezone information."""
+    return datetime.now(timezone.utc).isoformat()
+
+
 class ErrorResponse(BaseModel):
     """Standardized error response model."""
     error_code: str
     message: str
     details: Optional[Dict[str, Any]] = None
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=utcnow)
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -49,7 +61,7 @@ class SuccessResponse(BaseModel):
     status: str = "success"
     message: str
     data: Optional[Dict[str, Any]] = None
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=utcnow)
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -177,16 +189,16 @@ class FeatureAnalyticsResponse(BaseModel):
 class TestTrendResponse(BaseModel):
     """Test trend analysis response."""
     trend_points: List[Dict[str, Any]]
-    start_date: datetime
-    end_date: datetime
+    start_date: datetime  # Will be timezone-aware
+    end_date: datetime    # Will be timezone-aware
     pass_rate_trend: List[float]
     failure_trend: List[float]
 
     model_config = ConfigDict(
         json_schema_extra = {
             "example": {
-                "start_date": "2023-01-01T00:00:00",
-                "end_date": "2023-06-30T23:59:59",
+                "start_date": "2023-01-01T00:00:00Z",  # Note the Z for UTC
+                "end_date": "2023-06-30T23:59:59Z",    # Note the Z for UTC
                 "pass_rate_trend": [0.8, 0.85, 0.9],
                 "failure_trend": [0.2, 0.15, 0.1]
             }
@@ -202,7 +214,7 @@ class NotificationResponse(BaseModel):
     priority: NotificationPriority
     status: NotificationStatus
     channel: NotificationChannel
-    created_at: datetime
+    created_at: datetime  # Will be timezone-aware
     is_read: bool = False
 
     model_config = ConfigDict(
@@ -223,7 +235,7 @@ class HealthCheckResponse(BaseModel):
     """System health check response."""
     overall_status: str
     services: Dict[str, str]
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=utcnow)
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -314,7 +326,7 @@ class TestCaseInsightsResponse(BaseModel):
     analysis: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     recommendations: List[str] = Field(default_factory=list)
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = Field(default_factory=utcnow_iso)
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -343,7 +355,7 @@ class ProcessingStatusResponse(BaseModel):
     status: str
     progress: float = 0.0  # 0.0 to 1.0
     message: Optional[str] = None
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = Field(default_factory=utcnow_iso)
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -482,7 +494,7 @@ class StatisticsResponse(BaseModel):
     total_test_cases: int = 0
     status_counts: Dict[str, int] = Field(default_factory=dict)
     pass_rate: float = 0.0
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = Field(default_factory=utcnow_iso)
 
     model_config = ConfigDict(
         json_schema_extra = {
@@ -534,7 +546,7 @@ class ProcessReportResponse(BaseModel):
     message: str
     report_id: Optional[str] = None
     task_id: Optional[str] = None
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = Field(default_factory=utcnow_iso)
 
     model_config = ConfigDict(
         json_schema_extra = {

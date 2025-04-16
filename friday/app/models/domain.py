@@ -1,7 +1,7 @@
 # domain.py
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from .base import (
@@ -9,6 +9,12 @@ from .base import (
     BuildEnvironment,
     Tag
 )
+
+
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
 
 
 class BuildInfo(BaseModel):
@@ -61,8 +67,12 @@ class BuildInfo(BaseModel):
     def get_build_duration(self) -> Optional[float]:
         """Calculate build duration if start and end times are available."""
         if self.start_time and self.end_time:
-            return (self.end_time - self.start_time).total_seconds()
+            # Ensure both datetimes are timezone-aware before subtraction
+            start = self.start_time if self.start_time.tzinfo else self.start_time.replace(tzinfo=timezone.utc)
+            end = self.end_time if self.end_time.tzinfo else self.end_time.replace(tzinfo=timezone.utc)
+            return (end - start).total_seconds()
         return self.duration
+
 
 class StepEmbedding(BaseModel):
     """Model representing an embedding attached to a test step."""
@@ -78,6 +88,7 @@ class StepEmbedding(BaseModel):
         }
     )
 
+
 class Step(BaseModel):
     """Model representing a test step."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -90,6 +101,8 @@ class Step(BaseModel):
     screenshot: Optional[str] = None
     logs: Optional[List[str]] = None
     embeddings: Optional[List[StepEmbedding]] = None  # Updated to use StepEmbedding type
+    start_time: Optional[datetime] = None  # Added for duration calculation
+    end_time: Optional[datetime] = None  # Added for duration calculation
 
     class Config:
         use_enum_values = True
@@ -116,7 +129,10 @@ class Step(BaseModel):
     def get_duration(self) -> Optional[float]:
         """Calculate step duration."""
         if self.start_time and self.end_time:
-            return (self.end_time - self.start_time).total_seconds() * 1000
+            # Ensure both datetimes are timezone-aware before subtraction
+            start = self.start_time if self.start_time.tzinfo else self.start_time.replace(tzinfo=timezone.utc)
+            end = self.end_time if self.end_time.tzinfo else self.end_time.replace(tzinfo=timezone.utc)
+            return (end - start).total_seconds() * 1000
         return self.duration
 
 
@@ -135,6 +151,8 @@ class Scenario(BaseModel):
     retries: int = 0
     is_flaky: bool = False  # Added is_flaky
     embeddings: Optional[List[StepEmbedding]] = None  # Updated to use StepEmbedding type
+    start_time: Optional[datetime] = None  # Added for duration calculation
+    end_time: Optional[datetime] = None  # Added for duration calculation
 
     class Config:
         use_enum_values = True
@@ -183,6 +201,12 @@ class Scenario(BaseModel):
 
     def get_total_duration(self) -> Optional[float]:
         """Calculate total duration of steps."""
+        if self.start_time and self.end_time:
+            # Ensure both datetimes are timezone-aware before subtraction
+            start = self.start_time if self.start_time.tzinfo else self.start_time.replace(tzinfo=timezone.utc)
+            end = self.end_time if self.end_time.tzinfo else self.end_time.replace(tzinfo=timezone.utc)
+            return (end - start).total_seconds() * 1000
+
         step_durations = [step.duration or 0 for step in self.steps]
         return sum(step_durations) if step_durations else self.duration
 
@@ -196,12 +220,16 @@ class TestRun(BaseModel):
     description: Optional[str] = None
 
     # Execution context
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=utcnow)  # Updated to use timezone-aware utcnow
     environment: str
 
     # Run details
     status: TestStatus
     duration: float  # Total run duration in milliseconds
+
+    # Added start and end time for more accurate duration tracking
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
 
     # Scenarios
     scenarios: List[Scenario] = Field(default_factory=list)
@@ -234,15 +262,23 @@ class TestRun(BaseModel):
 
         # Calculate pass rate
         pass_rate = (
-                    status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100) if total_scenarios > 0 else 0
+                status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100) if total_scenarios > 0 else 0
+
+        # Calculate total duration from start/end times if available
+        if self.start_time and self.end_time:
+            # Ensure both datetimes are timezone-aware before subtraction
+            start = self.start_time if self.start_time.tzinfo else self.start_time.replace(tzinfo=timezone.utc)
+            end = self.end_time if self.end_time.tzinfo else self.end_time.replace(tzinfo=timezone.utc)
+            total_duration = (end - start).total_seconds() * 1000
+        else:
+            total_duration = sum(scenario.duration or 0 for scenario in self.scenarios)
 
         return {
             "total_scenarios": total_scenarios,
             "status_counts": status_counts,
             "pass_rate": round(pass_rate, 2),
-            "total_duration": sum(scenario.duration or 0 for scenario in self.scenarios),
-            "average_scenario_duration": sum(
-                scenario.duration or 0 for scenario in self.scenarios) / total_scenarios if total_scenarios > 0 else 0
+            "total_duration": total_duration,
+            "average_scenario_duration": total_duration / total_scenarios if total_scenarios > 0 else 0
         }
 
     def get_failing_scenarios(self) -> List[Scenario]:
@@ -300,7 +336,7 @@ class Feature(BaseModel):
 
         # Calculate pass rate
         pass_rate = (
-                    status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100) if total_scenarios > 0 else 0
+                status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100) if total_scenarios > 0 else 0
 
         return {
             "total_scenarios": total_scenarios,

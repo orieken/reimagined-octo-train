@@ -4,7 +4,7 @@ import logging
 import uuid
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.config import settings
 from app.services.vector_db import VectorDBService, SearchResult
@@ -17,6 +17,18 @@ from app.models import (
 
 
 logger = logging.getLogger(__name__)
+
+
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
+
+
+# Helper function to get ISO formatted string with timezone info
+def utcnow_iso():
+    """Return current UTC datetime as ISO 8601 string with timezone information."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 class TestDataRepository:
@@ -118,7 +130,7 @@ class TestDataRepository:
                     id=report_id,
                     name=f"Placeholder Report for {test_case.name}",
                     status=TestStatus.PENDING.value,  # Use a valid enum value
-                    timestamp=datetime.now().isoformat(),
+                    timestamp=utcnow_iso(),  # Use timezone-aware UTC ISO string
                     duration=0,
                     environment="unknown",
                     scenarios=[],
@@ -146,7 +158,7 @@ class TestDataRepository:
                         'original_report_id': report_id,
                         'vector_storage_info': {
                             'embedding_used': len(embedding),
-                            'stored_at': datetime.now().isoformat()
+                            'stored_at': utcnow_iso()  # Use timezone-aware UTC ISO string
                         }
                     }
                 }
@@ -206,7 +218,7 @@ class TestDataRepository:
                         'test_case_id': test_case_id,
                         'vector_storage_info': {
                             'embedding_used': len(embedding),
-                            'stored_at': datetime.now().isoformat()
+                            'stored_at': utcnow_iso()  # Use timezone-aware UTC ISO string
                         }
                     }
                 }
@@ -361,6 +373,7 @@ class TestDataRepository:
 
             return results
 
+
 class ServiceOrchestrator:
     """
     Orchestrates interactions between different services to provide high-level functionality
@@ -499,354 +512,319 @@ class ServiceOrchestrator:
 
             raise
 
-        async def process_build_info(self, build_info: BuildInfo) -> str:
-            """
-            Process and store build information.
+    async def process_build_info(self, build_info: BuildInfo) -> str:
+        """
+        Process and store build information.
 
-            Args:
-                build_info: The build information to process and store
+        Args:
+            build_info: The build information to process and store
 
-            Returns:
-                build_id: The ID of the processed build info
-            """
-            logger.info("Processing build info: %s", build_info.build_number)
+        Returns:
+            build_id: The ID of the processed build info
+        """
+        logger.info("Processing build info: %s", build_info.build_number)
 
-            # Generate embedding for the build info
-            build_text = f"{build_info.build_number} {build_info.branch or ''} {build_info.commit or ''} {build_info.environment or ''}"
-            build_embedding = await self.llm.generate_embedding(build_text)
+        # Generate embedding for the build info
+        build_text = f"{build_info.build_number} {build_info.branch or ''} {build_info.commit or ''} {build_info.environment or ''}"
+        build_embedding = await self.llm.generate_embedding(build_text)
 
-            # Store the build info using the repository
-            return await self.repository.store_build_info(build_info, build_embedding)
+        # Store the build info using the repository
+        return await self.repository.store_build_info(build_info, build_embedding)
 
-        async def process_feature(self, feature: Feature) -> str:
-            """
-            Process and store a feature.
+    async def process_feature(self, feature: Feature) -> str:
+        """
+        Process and store a feature.
 
-            Args:
-                feature: The feature to process and store
+        Args:
+            feature: The feature to process and store
 
-            Returns:
-                feature_id: The ID of the processed feature
-            """
-            logger.info("Processing feature: %s", feature.name)
+        Returns:
+            feature_id: The ID of the processed feature
+        """
+        logger.info("Processing feature: %s", feature.name)
 
-            # Generate embedding for the feature
-            feature_text = f"{feature.name} {feature.description or ''} {' '.join(feature.tags or [])}"
-            feature_embedding = await self.llm.generate_embedding(feature_text)
+        # Generate embedding for the feature
+        feature_text = f"{feature.name} {feature.description or ''} {' '.join(feature.tags or [])}"
+        feature_embedding = await self.llm.generate_embedding(feature_text)
 
-            # Store the feature using the repository
-            return await self.repository.store_feature(feature, feature_embedding)
+        # Store the feature using the repository
+        return await self.repository.store_feature(feature, feature_embedding)
 
-        async def semantic_search(self, query: str, filters: Dict[str, Any] = None, limit: int = None) -> List[
-            SearchResult]:
-            """
-            Perform semantic search across the vector database.
+    async def semantic_search(self, query: str, filters: Dict[str, Any] = None, limit: int = None) -> List[SearchResult]:
+        """
+        Perform semantic search across the vector database.
 
-            Args:
-                query: The search query text
-                filters: Optional filters to apply
-                limit: Maximum number of results to return
+        Args:
+            query: The search query text
+            filters: Optional filters to apply
+            limit: Maximum number of results to return
 
-            Returns:
-                List of search results
-            """
-            if limit is None:
-                limit = settings.DEFAULT_QUERY_LIMIT
+        Returns:
+            List of search results
+        """
+        if limit is None:
+            limit = settings.DEFAULT_QUERY_LIMIT
 
-            # Generate embedding for the query
-            query_embedding = await self.llm.generate_embedding(query)
+        # Generate embedding for the query
+        query_embedding = await self.llm.generate_embedding(query)
 
-            # Use the repository to perform the search
-            return await self.repository.semantic_search(query_embedding, filters, limit)
+        # Use the repository to perform the search
+        return await self.repository.semantic_search(query_embedding, filters, limit)
 
-        async def get_task_status(self, task_id: str) -> Dict[str, Any]:
-            """
-            Get the status of an asynchronous processing task.
+    async def get_task_status(self, task_id: str) -> Dict[str, Any]:
+        """
+        Get the status of an asynchronous processing task.
 
-            Args:
-                task_id: ID of the task to check
+        Args:
+            task_id: ID of the task to check
 
-            Returns:
-                Dictionary with status information
-            """
-            return self.tasks.get(task_id, None)
+        Returns:
+            Dictionary with status information
+        """
+        return self.tasks.get(task_id, None)
 
-        async def get_test_failure_insights(self, test_case_id: str) -> Dict[str, Any]:
-            """
-            Get insights for a specific test failure.
+    async def get_test_failure_insights(self, test_case_id: str) -> Dict[str, Any]:
+        """
+        Get insights for a specific test failure.
 
-            Args:
-                test_case_id: ID of the test case to analyze
+        Args:
+            test_case_id: ID of the test case to analyze
 
-            Returns:
-                Dictionary containing analysis and insights
-            """
-            # Find the test case
-            query_text = "test failure analysis"
-            query_embedding = await self.llm.generate_embedding(query_text)
+        Returns:
+            Dictionary containing analysis and insights
+        """
+        # Find the test case
+        query_text = "test failure analysis"
+        query_embedding = await self.llm.generate_embedding(query_text)
 
-            test_case_results = self.vector_db.search_test_cases(
-                query_embedding,
-                limit=settings.DEFAULT_QUERY_LIMIT
-            )
+        test_case_results = self.vector_db.search_test_cases(
+            query_embedding,
+            limit=settings.DEFAULT_QUERY_LIMIT
+        )
 
-            # Filter results to match the exact ID
-            matching_results = [r for r in test_case_results if r.id == test_case_id]
+        # Filter results to match the exact ID
+        matching_results = [r for r in test_case_results if r.id == test_case_id]
 
-            if not matching_results:
-                logger.warning("Test case with ID %s not found", test_case_id)
-                return {
-                    "error": "Test case not found",
-                    "recommendations": ["Check the test case ID and try again"]
-                }
-
-            test_case_data = matching_results[0].payload
-
-            # Only analyze failed test cases
-            if test_case_data.get("status") != "FAILED":
-                return {
-                    "message": "Test case did not fail",
-                    "status": test_case_data.get("status"),
-                    "analysis": "No failure analysis needed for non-failing tests"
-                }
-
-            # Get related test steps
-            test_steps = self.vector_db.search_test_steps(
-                query_embedding,
-                test_case_id=test_case_id,
-                limit=20
-            )
-
-            # Find similar failed test cases for context
-            similar_failures_query = f"{test_case_data.get('name', '')} {test_case_data.get('error_message', '')}"
-            similar_failures_embedding = await self.llm.generate_embedding(similar_failures_query)
-
-            similar_failures = self.vector_db.search_test_cases(
-                similar_failures_embedding,
-                limit=5
-            )
-
-            # Filter to include only failures and exclude the current test case
-            similar_failures = [
-                f for f in similar_failures
-                if f.id != test_case_id and f.payload.get("status") == "FAILED"
-            ]
-
-            # Prepare data for analysis
-            analysis_data = {
-                "test_case": test_case_data,
-                "steps": [step.payload for step in test_steps],
-                "similar_failures": [f.payload for f in similar_failures],
-                "error_message": test_case_data.get("error_message", "No error message available")
-            }
-
-            # Analyze with LLM
-            analysis_result = await self.llm.analyze_test_failure(analysis_data)
-
-            # Enhance the analysis with historical context if available
-            if similar_failures:
-                historical_prompt = f"""
-                            Based on the test failure analysis:
-                            {analysis_result.get('root_cause')}
-
-                            And considering these similar failures:
-                            {[f.payload.get('name') + ': ' + f.payload.get('error_message', 'No error') for f in similar_failures]}
-
-                            Provide insights about potential patterns, frequency, and whether this appears to be a recurring issue.
-                            Focus on whether this is likely a regression, an environment issue, a flaky test, or a new bug.
-                            """
-
-                historical_analysis = await self.llm.generate_text(
-                    prompt=historical_prompt,
-                    temperature=0.3,
-                    max_tokens=300
-                )
-
-                analysis_result["historical_context"] = historical_analysis
-
+        if not matching_results:
+            logger.warning("Test case with ID %s not found", test_case_id)
             return {
-                "test_case": test_case_data,
-                "analysis": analysis_result,
-                "timestamp": datetime.now().isoformat()
+                "error": "Test case not found",
+                "recommendations": ["Check the test case ID and try again"]
             }
 
-        async def generate_report_summary(self, report_id: str) -> str:
-            """
-            Generate a human-readable summary of a test report.
+        test_case_data = matching_results[0].payload
 
-            Args:
-                report_id: ID of the report to summarize
-
-            Returns:
-                String with a concise yet informative summary
-            """
-            # Find the report
-            query_text = "test report summary"
-            query_embedding = await self.llm.generate_embedding(query_text)
-
-            report_results = self.vector_db.search_reports(
-                query_embedding,
-                limit=settings.DEFAULT_QUERY_LIMIT
-            )
-
-            # Filter results to match the exact ID
-            matching_results = [r for r in report_results if r.id == report_id]
-
-            if not matching_results:
-                logger.warning("Report with ID %s not found", report_id)
-                return "Report not found. Please check the report ID and try again."
-
-            report_data = matching_results[0].payload
-
-            # Get related test cases for this report
-            test_cases = self.vector_db.search_test_cases(
-                query_embedding,
-                report_id=report_id,
-                limit=50  # Get a good sample of test cases
-            )
-
-            # Calculate basic statistics
-            total_tests = len(test_cases)
-            status_counts = {}
-
-            for tc in test_cases:
-                status = tc.payload.get("status")
-                status_counts[status] = status_counts.get(status, 0) + 1
-
-            # Prepare data for the summary
-            report_details = {
-                "report": report_data,
-                "test_cases": [tc.payload for tc in test_cases],
-                "statistics": {
-                    "total_tests": total_tests,
-                    "status_counts": status_counts,
-                    "pass_rate": (status_counts.get("PASSED", 0) / total_tests * 100) if total_tests > 0 else 0
-                }
-            }
-
-            # Generate summary with LLM
-            summary = await self.llm.summarize_report(report_details)
-
-            return summary
-
-        async def analyze_build_trend(self, build_numbers: List[str]) -> Dict[str, Any]:
-            """
-            Analyze trends across multiple builds.
-
-            Args:
-                build_numbers: List of build numbers to analyze
-
-            Returns:
-                Dictionary containing trend analysis
-            """
-            if not build_numbers:
-                return {"error": "No build numbers provided for analysis"}
-
-            # Generate a query embedding
-            query_text = "build trend analysis " + " ".join(build_numbers)
-            query_embedding = await self.llm.generate_embedding(query_text)
-
-            # Collect build information for all specified builds
-            build_results = self.vector_db.search_build_info(query_embedding, limit=len(build_numbers) * 2)
-
-            # Filter to only include the requested build numbers
-            build_data = []
-            for result in build_results:
-                build_number = result.payload.get("build_number")
-                if build_number in build_numbers:
-                    build_data.append(result.payload)
-
-            if not build_data:
-                return {"error": "None of the specified builds were found"}
-
-            # Sort builds by date if available
-            build_data.sort(
-                key=lambda x: x.get("date", ""),
-                reverse=False
-            )
-
-            # Prepare data for LLM analysis
-            trend_data = {
-                "builds": build_data,
-                "num_builds": len(build_data),
-                "build_numbers": [b.get("build_number") for b in build_data],
-                "date_range": f"{build_data[0].get('date', 'N/A')} to {build_data[-1].get('date', 'N/A')}" if len(
-                    build_data) > 1 else "N/A"
-            }
-
-            # Generate trend analysis with LLM
-            trend_prompt = f"""
-                        Analyze the trend across these builds:
-                        {json.dumps(trend_data, indent=2)}
-
-                        Focus on:
-                        1. Performance trends
-                        2. Success/failure rate changes
-                        3. Notable improvements or regressions
-                        4. Any apparent correlations with code changes or environments
-
-                        Provide a concise but thorough analysis of the build trends.
-                        """
-
-            trend_analysis = await self.llm.generate_text(
-                prompt=trend_prompt,
-                temperature=0.4,
-                max_tokens=800
-            )
-
+        # Only analyze failed test cases
+        if test_case_data.get("status") != "FAILED":
             return {
-                "build_numbers": build_numbers,
-                "builds_analyzed": len(build_data),
-                "trend_analysis": trend_analysis,
-                "timestamp": datetime.now().isoformat()
+                "message": "Test case did not fail",
+                "status": test_case_data.get("status"),
+                "analysis": "No failure analysis needed for non-failing tests"
             }
 
-        async def generate_answer(self, query: str, context: List[Dict] = None, max_tokens: int = 800) -> str:
-            """
-            Generate an answer to a query based on provided context.
+        # Get related test steps
+        test_steps = self.vector_db.search_test_steps(
+            query_embedding,
+            test_case_id=test_case_id,
+            limit=20
+        )
 
-            Args:
-                query: The user's query
-                context: List of context documents/chunks to use for answering
-                max_tokens: Maximum tokens to generate
+        # Find similar failed test cases for context
+        similar_failures_query = f"{test_case_data.get('name', '')} {test_case_data.get('error_message', '')}"
+        similar_failures_embedding = await self.llm.generate_embedding(similar_failures_query)
 
-            Returns:
-                Generated answer based on context
-            """
-            if not context:
-                # If no context provided, perform a search to get relevant context
-                search_results = await self.semantic_search(query, limit=5)
-                context = [result.payload for result in search_results]
+        similar_failures = self.vector_db.search_test_cases(
+            similar_failures_embedding,
+            limit=5
+        )
 
-            # Format context for the prompt
-            context_text = json.dumps(context, indent=2)
+        # Filter to include only failures and exclude the current test case
+        similar_failures = [
+            f for f in similar_failures
+            if f.id != test_case_id and f.payload.get("status") == "FAILED"
+        ]
 
-            # Create prompt for LLM
-            prompt = f"""
-                        Use the following context to answer the question:
+        # Prepare data for analysis
+        analysis_data = {
+            "test_case": test_case_data,
+            "steps": [step.payload for step in test_steps],
+            "similar_failures": [f.payload for f in similar_failures],
+            "error_message": test_case_data.get("error_message", "No error message available")
+        }
 
-                        CONTEXT:
-                        {context_text}
+        # Analyze with LLM
+        analysis_result = await self.llm.analyze_test_failure(analysis_data)
 
-                        QUESTION:
-                        {query}
+        # Enhance the analysis with historical context if available
+        if similar_failures:
+            historical_prompt = f"""
+                        Based on the test failure analysis:
+                        {analysis_result.get('root_cause')}
 
-                        Provide a concise and accurate answer based only on the information provided in the context.
-                        If the context doesn't contain enough information to answer the question, acknowledge that 
-                        and suggest what information would be needed.
+                        And considering these similar failures:
+                        {[f.payload.get('name') + ': ' + f.payload.get('error_message', 'No error') for f in similar_failures]}
+
+                        Provide insights about potential patterns, frequency, and whether this appears to be a recurring issue.
+                        Focus on whether this is likely a regression, an environment issue, a flaky test, or a new bug.
                         """
 
-            # Generate answer
-            system_prompt = """
-                        You are a helpful assistant specialized in test analysis and reporting.
-                        Answer questions accurately based on the provided context.
-                        """
-
-            answer = await self.llm.generate_text(
-                prompt=prompt,
-                system_prompt=system_prompt,
+            historical_analysis = await self.llm.generate_text(
+                prompt=historical_prompt,
                 temperature=0.3,
-                max_tokens=max_tokens
+                max_tokens=300
             )
 
-            return answer
+            analysis_result["historical_context"] = historical_analysis
+
+        return {
+            "test_case": test_case_data,
+            "analysis": analysis_result,
+            "timestamp": utcnow_iso()  # Use timezone-aware UTC ISO string
+        }
+
+    async def generate_report_summary(self, report_id: str) -> str:
+        """
+        Generate a human-readable summary of a test report.
+
+        Args:
+            report_id: ID of the report to summarize
+
+        Returns:
+            String with a concise yet informative summary
+        """
+        # Find the report
+        query_text = "test report summary"
+        query_embedding = await self.llm.generate_embedding(query_text)
+
+        report_results = self.vector_db.search_reports(
+            query_embedding,
+            limit=settings.DEFAULT_QUERY_LIMIT
+        )
+
+        # Filter results to match the exact ID
+        matching_results = [r for r in report_results if r.id == report_id]
+
+        if not matching_results:
+            logger.warning("Report with ID %s not found", report_id)
+            return "Report not found. Please check the report ID and try again."
+
+        report_data = matching_results[0].payload
+
+        # Get related test cases for this report
+        test_cases = self.vector_db.search_test_cases(
+            query_embedding,
+            report_id=report_id,
+            limit=50  # Get a good sample of test cases
+        )
+
+        # Calculate basic statistics
+        total_tests = len(test_cases)
+        status_counts = {}
+
+        for tc in test_cases:
+            status = tc.payload.get("status")
+            status_counts[status] = status_counts.get(status, 0) + 1
+
+        # Prepare data for the summary
+        report_details = {
+            "report": report_data,
+            "test_cases": [tc.payload for tc in test_cases],
+            "statistics": {
+                "total_tests": total_tests,
+                "status_counts": status_counts,
+                "pass_rate": (status_counts.get("PASSED", 0) / total_tests * 100) if total_tests > 0 else 0
+            }
+        }
+
+        # Generate summary with LLM
+        summary = await self.llm.summarize_report(report_details)
+
+        return summary
+
+    async def analyze_build_trend(self, build_numbers: List[str]) -> Dict[str, Any]:
+        """
+        Analyze trends across multiple builds.
+
+        Args:
+            build_numbers: List of build numbers to analyze
+
+        Returns:
+            Dictionary containing trend analysis
+        """
+        if not build_numbers:
+            return {"error": "No build numbers provided for analysis"}
+
+        # Generate a query embedding
+        query_text = "build trend analysis " + " ".join(build_numbers)
+        query_embedding = await self.llm.generate_embedding(query_text)
+
+        # Collect build information for all specified builds
+        build_results = self.vector_db.search_build_info(query_embedding, limit=len(build_numbers) * 2)
+
+        # Filter to only include the requested build numbers
+        build_data = []
+        for result in build_results:
+            build_number = result.payload.get("build_number")
+            if build_number in build_numbers:
+                build_data.append(result.payload)
+
+        if not build_data:
+            return {"error": "None of the specified builds were found"}
+
+        # Sort builds by date if available
+        build_data.sort(
+            key=lambda x: x.get("date", ""),
+            reverse=False
+        )
+
+        # Prepare data for LLM analysis
+        trend_data = {
+            "builds": build_data,
+            "num_builds": len(build_data),
+            "build_numbers": [b.get("build_number") for b in build_data],
+            "date_range": f"{build_data[0].get('date', 'N/A')} to {build_data[-1].get('date', 'N/A')}" if len(
+                build_data) > 1 else "N/A"
+        }
+
+        # Generate trend analysis with LLM
+        trend_prompt = f"""
+                    Analyze the trend across these builds:
+                    {json.dumps(trend_data, indent=2)}
+
+                    Focus on:
+                    1. Performance trends
+                    2. Success/failure rate changes
+                    3. Notable improvements or regressions
+                    4. Any apparent correlations with code changes or environments
+
+                    Provide a concise but thorough analysis of the build trends.
+                    """
+
+        trend_analysis = await self.llm.generate_text(
+            prompt=trend_prompt,
+            temperature=0.4,
+            max_tokens=800
+        )
+
+        return {
+            "build_numbers": build_numbers,
+            "builds_analyzed": len(build_data),
+            "trend_analysis": trend_analysis,
+            "timestamp": utcnow_iso()  # Use timezone-aware UTC ISO string
+        }
+
+    async def generate_answer(self, query: str, context: List[Dict] = None, max_tokens: int = 800) -> str:
+        """
+        Generate an answer to a query based on provided context.
+
+        Args:
+            query: The user's query
+            context: List of context documents/chunks to use for answering
+            max_tokens: Maximum tokens to generate
+
+        Returns:
+            Generated answer based on context
+        """
+        if not context:
+            # If no context provided, perform a search to get relevant context
+            search_results = await self.semantic_search(query, limit=5)

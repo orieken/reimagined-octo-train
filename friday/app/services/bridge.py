@@ -3,7 +3,7 @@ Bridge service for connecting PostgreSQL database with vector database
 """
 import logging
 from typing import Dict, List, Optional, Any, Union
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from sqlalchemy.orm import Session
@@ -20,6 +20,30 @@ from app.models.domain import (
 from app.services.vector_db import VectorDBService
 
 logger = logging.getLogger(__name__)
+
+
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
+
+
+# Helper function to ensure datetime objects are timezone-aware
+def ensure_timezone_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    """
+    Ensure datetime object has timezone info, adding UTC if not present.
+
+    Args:
+        dt: The datetime object to check
+
+    Returns:
+        Timezone-aware datetime object or None if input is None
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 class DatabaseVectorBridgeService:
@@ -69,10 +93,13 @@ class DatabaseVectorBridgeService:
             if db_test_run.build_id:
                 db_build_info = self.db.query(BuildInfo).filter(BuildInfo.id == db_test_run.build_id).first()
                 if db_build_info:
+                    # Ensure build_date has timezone info
+                    build_date = ensure_timezone_aware(db_build_info.start_time)
+
                     build_info = DomainBuildInfo(
                         build_id=str(db_build_info.id),
                         build_number=db_build_info.build_number,
-                        build_date=db_build_info.start_time,
+                        build_date=build_date,
                         branch=db_build_info.branch,
                         commit_hash=db_build_info.commit_hash,
                         build_url=db_build_info.ci_url,
@@ -105,6 +132,9 @@ class DatabaseVectorBridgeService:
                             build_info=build_info
                         )
 
+            # Ensure created_at has timezone info
+            created_at = ensure_timezone_aware(db_test_run.created_at)
+
             # Get scenarios for this test run
             scenarios = self.db.query(Scenario).filter(Scenario.test_run_id == test_run_id).all()
 
@@ -112,7 +142,7 @@ class DatabaseVectorBridgeService:
             report = Report(
                 id=test_run_id,
                 name=db_test_run.name,
-                timestamp=db_test_run.created_at,
+                timestamp=created_at,
                 scenarios=[],  # Will be populated below
                 metadata={
                     "project_id": db_test_run.project_id,
@@ -135,7 +165,7 @@ class DatabaseVectorBridgeService:
                 report_text = f"""
                 Test Run: {db_test_run.name}
                 Project: {project_name}
-                Date: {db_test_run.created_at}
+                Date: {created_at}
                 Status: {db_test_run.status.value if db_test_run.status else 'Unknown'}
                 Environment: {db_test_run.environment or 'Unknown'}
                 Branch: {db_test_run.branch or 'Unknown'}

@@ -1,8 +1,15 @@
 # search_analysis.py
 from typing import List, Dict, Any, Optional, Union
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
+
+
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
+
 
 class QueryFilter(BaseModel):
     """Structured query filter for advanced searching."""
@@ -125,7 +132,7 @@ class AnalysisResult(BaseModel):
     """Comprehensive analysis result model."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     request_id: str
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=utcnow)  # Updated to use timezone-aware utcnow
 
     # Analysis findings
     summary: str
@@ -157,8 +164,8 @@ class AnalysisResult(BaseModel):
 
 class TrendAnalysis(BaseModel):
     """Trend analysis for test runs and features."""
-    start_date: datetime
-    end_date: datetime
+    start_date: datetime  # Will be timezone-aware
+    end_date: datetime    # Will be timezone-aware
 
     # Trend metrics
     pass_rate_trend: Dict[str, float] = Field(default_factory=dict)
@@ -171,8 +178,8 @@ class TrendAnalysis(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "start_date": "2023-01-01T00:00:00",
-                "end_date": "2023-06-30T23:59:59",
+                "start_date": "2023-01-01T00:00:00Z",  # Note the Z for UTC
+                "end_date": "2023-06-30T23:59:59Z",    # Note the Z for UTC
                 "pass_rate_trend": {
                     "January": 0.85,
                     "February": 0.90,

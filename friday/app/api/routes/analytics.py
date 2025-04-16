@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 
 from app.services.analytics_service import get_test_failure_metrics, calculate_build_health_score, get_flaky_tests
@@ -15,6 +15,29 @@ from app.models.database import Project, BuildMetric, TestCase, Report
 
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+
+# Helper function to get timezone-aware UTC datetime
+def utcnow():
+    """Return current UTC datetime with timezone information."""
+    return datetime.now(timezone.utc)
+
+
+# Helper function to ensure datetime objects are timezone-aware
+def ensure_timezone_aware(dt: datetime) -> datetime:
+    """
+    Ensure datetime object has timezone info, adding UTC if not present.
+
+    Args:
+        dt: The datetime object to check
+
+    Returns:
+        Timezone-aware datetime object
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
 
 @router.get("/build-health")
 async def build_health(
@@ -59,9 +82,13 @@ async def build_performance(
     try:
         # Default to last 30 days if not specified
         if not end_date:
-            end_date = datetime.utcnow()
+            end_date = utcnow()  # Use timezone-aware UTC now
         if not start_date:
             start_date = end_date - timedelta(days=30)
+
+        # Ensure dates are timezone-aware
+        start_date = ensure_timezone_aware(start_date)
+        end_date = ensure_timezone_aware(end_date)
 
         if not project_id:
             raise HTTPException(
@@ -101,9 +128,13 @@ async def top_failing_tests(
     try:
         # Default to last 30 days if not specified
         if not end_date:
-            end_date = datetime.utcnow()
+            end_date = utcnow()  # Use timezone-aware UTC now
         if not start_date:
             start_date = end_date - timedelta(days=30)
+
+        # Ensure dates are timezone-aware
+        start_date = ensure_timezone_aware(start_date)
+        end_date = ensure_timezone_aware(end_date)
 
         if not project_id:
             raise HTTPException(
@@ -152,9 +183,13 @@ async def flaky_tests(
     try:
         # Default to last 30 days if not specified
         if not end_date:
-            end_date = datetime.utcnow()
+            end_date = utcnow()  # Use timezone-aware UTC now
         if not start_date:
             start_date = end_date - timedelta(days=30)
+
+        # Ensure dates are timezone-aware
+        start_date = ensure_timezone_aware(start_date)
+        end_date = ensure_timezone_aware(end_date)
 
         if not project_id:
             raise HTTPException(
@@ -200,7 +235,7 @@ async def dashboard_data(
     Get all data needed for the dashboard in a single call
     """
     try:
-        end_date = datetime.utcnow()
+        end_date = utcnow()  # Use timezone-aware UTC now
         start_date = end_date - timedelta(days=days)
 
         result = {
@@ -283,6 +318,7 @@ async def dashboard_data(
             detail=f"Failed to retrieve dashboard data: {str(e)}"
         )
 
+
 @router.get("/test-failure-trends")
 async def test_failure_trends(
         start_date: Optional[datetime] = Query(None),
@@ -296,9 +332,13 @@ async def test_failure_trends(
     """
     # Default to last 30 days if not specified
     if not end_date:
-        end_date = datetime.utcnow()
+        end_date = utcnow()  # Use timezone-aware UTC now
     if not start_date:
         start_date = end_date - timedelta(days=30)
+
+    # Ensure dates are timezone-aware
+    start_date = ensure_timezone_aware(start_date)
+    end_date = ensure_timezone_aware(end_date)
 
     data = get_test_failure_metrics(
         db,
@@ -309,7 +349,6 @@ async def test_failure_trends(
     )
 
     return data
-
 
 
 def get_health_status(score: float) -> str:
@@ -338,14 +377,18 @@ def get_build_performance_metrics(db, start_date, end_date, project_id, branch=N
 
     Args:
         db: Database session
-        start_date: Start date for analysis
-        end_date: End date for analysis
+        start_date: Start date for analysis (will be made timezone-aware if not already)
+        end_date: End date for analysis (will be made timezone-aware if not already)
         project_id: Project ID to analyze
         branch: Optional branch name to filter by
 
     Returns:
         Dictionary containing performance metrics
     """
+    # Ensure dates are timezone-aware
+    start_date = ensure_timezone_aware(start_date)
+    end_date = ensure_timezone_aware(end_date)
+
     try:
         # Build query to fetch build information
         query = db.query(BuildMetric).filter(
@@ -386,11 +429,14 @@ def get_build_performance_metrics(db, start_date, end_date, project_id, branch=N
         failed_builds = 0
 
         for build in builds:
+            # Make sure timestamp is timezone-aware
+            build_timestamp = ensure_timezone_aware(build.timestamp)
+
             # Extract metrics for each build
             build_data = {
                 "build_id": build.id,
                 "build_number": build.build_number,
-                "timestamp": build.timestamp.isoformat(),
+                "timestamp": build_timestamp.isoformat(),
                 "duration": build.duration,
                 "status": build.status,
                 "commit": build.commit
@@ -455,14 +501,18 @@ def get_top_failing_tests(db, start_date, end_date, project_id, limit=10):
 
     Args:
         db: Database session
-        start_date: Start date for analysis
-        end_date: End date for analysis
+        start_date: Start date for analysis (will be made timezone-aware if not already)
+        end_date: End date for analysis (will be made timezone-aware if not already)
         project_id: Project ID to analyze
         limit: Maximum number of tests to return
 
     Returns:
         List of top failing tests
     """
+    # Ensure dates are timezone-aware
+    start_date = ensure_timezone_aware(start_date)
+    end_date = ensure_timezone_aware(end_date)
+
     try:
         # Query to get all test cases from reports for this project
         test_cases = db.query(TestCase).join(Report).filter(
@@ -481,11 +531,14 @@ def get_top_failing_tests(db, start_date, end_date, project_id, limit=10):
             key = f"{tc.feature}::{tc.name}"
 
             if key not in test_stats:
+                # Ensure timestamp is timezone-aware
+                test_timestamp = ensure_timezone_aware(tc.timestamp)
+
                 test_stats[key] = {
                     "name": tc.name,
                     "feature": tc.feature,
                     "failure_count": 0,
-                    "last_failed": tc.timestamp,
+                    "last_failed": test_timestamp,
                     "last_error": tc.error_message,
                     "tags": tc.tags
                 }
@@ -493,13 +546,21 @@ def get_top_failing_tests(db, start_date, end_date, project_id, limit=10):
             # Update stats
             test_stats[key]["failure_count"] += 1
 
+            # Make sure timestamp is timezone-aware
+            current_timestamp = ensure_timezone_aware(tc.timestamp)
+
             # Track most recent failure
-            if tc.timestamp > test_stats[key]["last_failed"]:
-                test_stats[key]["last_failed"] = tc.timestamp
+            if current_timestamp > test_stats[key]["last_failed"]:
+                test_stats[key]["last_failed"] = current_timestamp
                 test_stats[key]["last_error"] = tc.error_message
 
         # Convert to list and sort by failure count
         failing_tests = list(test_stats.values())
+
+        # Convert datetime objects to ISO strings for serialization
+        for test in failing_tests:
+            test["last_failed"] = test["last_failed"].isoformat()
+
         failing_tests.sort(key=lambda x: x["failure_count"], reverse=True)
 
         # Apply limit
@@ -525,7 +586,7 @@ def calculate_build_health_score(db, project_id, branch=None):
     """
     try:
         # Get recent builds (last 2 weeks)
-        end_date = datetime.utcnow()
+        end_date = utcnow()  # Use timezone-aware UTC now
         start_date = end_date - timedelta(days=14)
 
         # Build query to fetch recent builds
@@ -579,7 +640,11 @@ def calculate_build_health_score(db, project_id, branch=None):
 
         # 3. Build frequency (15% of score)
         # Higher is better, up to a point (aim for at least one build per day)
-        days_covered = min(14, (recent_builds[-1].timestamp - recent_builds[0].timestamp).days + 1)
+        # Ensure timestamps are timezone-aware
+        first_timestamp = ensure_timezone_aware(recent_builds[0].timestamp)
+        last_timestamp = ensure_timezone_aware(recent_builds[-1].timestamp)
+
+        days_covered = min(14, (last_timestamp - first_timestamp).days + 1)
         builds_per_day = total_builds / days_covered if days_covered > 0 else 0
         frequency_score = min(15, builds_per_day * 3)  # 5 builds per day gets full score
 
@@ -608,8 +673,8 @@ def get_flaky_tests(db, start_date, end_date, project_id, min_flake_rate=0.1, li
 
     Args:
         db: Database session
-        start_date: Start date for analysis
-        end_date: End date for analysis
+        start_date: Start date for analysis (will be made timezone-aware if not already)
+        end_date: End date for analysis (will be made timezone-aware if not already)
         project_id: Project ID to analyze
         min_flake_rate: Minimum flake rate to consider (0.0-1.0)
         limit: Maximum number of tests to return
@@ -617,6 +682,10 @@ def get_flaky_tests(db, start_date, end_date, project_id, min_flake_rate=0.1, li
     Returns:
         List of flaky tests
     """
+    # Ensure dates are timezone-aware
+    start_date = ensure_timezone_aware(start_date)
+    end_date = ensure_timezone_aware(end_date)
+
     try:
         # Query to get all test cases from reports for this project
         test_cases = db.query(TestCase).join(Report).filter(
