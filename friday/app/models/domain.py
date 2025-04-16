@@ -65,8 +65,18 @@ class BuildInfo(BaseModel):
         return self.duration
 
 class StepEmbedding(BaseModel):
+    """Model representing an embedding attached to a test step."""
     data: str
     mime_type: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "data": "base64encodeddata",
+                "mime_type": "image/png"
+            }
+        }
+    )
 
 class Step(BaseModel):
     """Model representing a test step."""
@@ -79,7 +89,7 @@ class Step(BaseModel):
     duration: Optional[float] = None
     screenshot: Optional[str] = None
     logs: Optional[List[str]] = None
-    embeddings: Optional[List[StepEmbedding]] = None
+    embeddings: Optional[List[StepEmbedding]] = None  # Updated to use StepEmbedding type
 
     class Config:
         use_enum_values = True
@@ -90,7 +100,12 @@ class Step(BaseModel):
                 "name": "User logs in",
                 "status": "PASSED",
                 "duration": 250.5,
-                "embeddings": [0.1, 0.2, 0.3]  # Example embedding vector
+                "embeddings": [
+                    {
+                        "data": "base64encodeddata",
+                        "mime_type": "image/png"
+                    }
+                ]
             }
         }
 
@@ -119,7 +134,7 @@ class Scenario(BaseModel):
     error_message: Optional[str] = None
     retries: int = 0
     is_flaky: bool = False  # Added is_flaky
-    embeddings: Optional[List[float]] = None  # Added embeddings
+    embeddings: Optional[List[StepEmbedding]] = None  # Updated to use StepEmbedding type
 
     class Config:
         use_enum_values = True
@@ -133,7 +148,12 @@ class Scenario(BaseModel):
                 "tags": ["smoke", "login"],
                 "duration": 1500.5,
                 "is_flaky": False,
-                "embeddings": [0.1, 0.2, 0.3]
+                "embeddings": [
+                    {
+                        "data": "base64encodeddata",
+                        "mime_type": "image/png"
+                    }
+                ]
             }
         }
 
