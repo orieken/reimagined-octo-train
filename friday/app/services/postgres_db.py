@@ -17,6 +17,7 @@ from app.models.domain import (
     Scenario as TestCase, Step as TestStep, TestRun as Report,
     BuildInfo, Feature
 )
+from app.services import datetime_service as dt
 
 logger = logging.getLogger(__name__)
 
@@ -75,23 +76,14 @@ class PostgresDBService:
             The ID of the stored report
         """
         try:
-            # Convert timestamp string to datetime if it's a string
-            timestamp = report.timestamp
-            if isinstance(timestamp, str):
-                try:
-                    timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                except ValueError:
-                    timestamp = datetime.now(timezone.utc)
-            elif isinstance(timestamp, datetime):
-                # Ensure datetime is timezone-aware
-                if timestamp.tzinfo is None:
-                    timestamp = timestamp.replace(tzinfo=timezone.utc)
-            else:
-                timestamp = datetime.now(timezone.utc)
+            # Import datetime services to ensure consistent handling
 
-            # Use consistent timezone handling for all datetime objects
-            created_at = datetime.now(timezone.utc)
-            updated_at = datetime.now(timezone.utc)
+            # Use ensure_utc_datetime for consistent timestamp handling
+            timestamp = dt.ensure_utc_datetime(report.timestamp)
+
+            # Always use now_utc() for created_at and updated_at
+            created_at = dt.now_utc()
+            updated_at = dt.now_utc()
 
             # Calculate success rate
             total_scenarios = len(report.scenarios)
@@ -103,29 +95,6 @@ class PostgresDBService:
 
             # Prepare metadata
             metadata = report.metadata if hasattr(report, 'metadata') else {}
-
-            # Convert report to SQL parameters
-            params = {
-                "id": report.id,
-                "name": report.name,
-                "status": report.status,
-                "project_id": metadata.get("project_id", 1),  # Default to project ID 1 if not specified
-                "environment": report.environment,
-                "start_time": timestamp,
-                "end_time": None,  # May need to calculate this from timestamps in scenarios
-                "duration": report.duration,
-                "total_tests": total_scenarios,
-                "passed_tests": passed_scenarios,
-                "failed_tests": failed_scenarios,
-                "skipped_tests": skipped_scenarios,
-                "error_tests": error_scenarios,
-                "success_rate": success_rate,
-                "branch": metadata.get("branch", "main"),
-                "commit_hash": metadata.get("commit", None),
-                "meta_data": json.dumps(metadata),
-                "created_at": created_at,
-                "updated_at": updated_at
-            }
 
             # Check if the project exists, create it if it doesn't
             project_id = metadata.get("project_id", 1)
@@ -208,14 +177,14 @@ class PostgresDBService:
                 ) RETURNING id
                 """
 
-                # Remove id from params since we'll let the database generate it
+                # Use consistent timezone-aware datetime objects
                 params = {
                     "name": report.name,
                     "status": report.status,
                     "project_id": project_id,
                     "environment": report.environment,
                     "start_time": timestamp,
-                    "end_time": None,
+                    "end_time": None,  # Could be updated with ensure_utc_datetime if needed
                     "duration": report.duration,
                     "total_tests": total_scenarios,
                     "passed_tests": passed_scenarios,
@@ -234,14 +203,6 @@ class PostgresDBService:
                 report_id = result.scalar()
 
             logger.info(f"Stored report with DB ID {report_id} (original UUID: {report.id}) in PostgreSQL")
-            return report_id
-
-            result = await session.execute(text(query), params)
-
-            # Get the report ID
-            report_id = result.scalar()
-
-            logger.info(f"Stored report {report_id} in PostgreSQL")
             return report_id
 
         except Exception as e:
@@ -292,6 +253,12 @@ class PostgresDBService:
             else:
                 numeric_report_id = report_id
 
+            # Ensure all datetime fields are timezone-aware
+            start_time = dt.ensure_utc_datetime(test_case.start_time if hasattr(test_case, 'start_time') else None)
+            end_time = dt.ensure_utc_datetime(test_case.end_time if hasattr(test_case, 'end_time') else None)
+            created_at = dt.now_utc()
+            updated_at = dt.now_utc()
+
             # Convert test case to SQL parameters
             params = {
                 "name": test_case.name,
@@ -300,14 +267,14 @@ class PostgresDBService:
                 "test_run_id": numeric_report_id,
                 "feature_id": None,  # Will need to look up or create feature
                 "duration": duration,
-                "start_time": None,  # May need to calculate from test case data
-                "end_time": None,
+                "start_time": start_time,
+                "end_time": end_time,
                 "error_message": test_case.error_message if hasattr(test_case, 'error_message') else None,
                 "stack_trace": test_case.stack_trace if hasattr(test_case, 'stack_trace') else None,
                 "parameters": json.dumps({}),  # Could populate from test case data
                 "meta_data": json.dumps(metadata),
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": created_at,
+                "updated_at": updated_at
             }
 
             # Find or create the feature
@@ -344,8 +311,8 @@ class PostgresDBService:
                         "repository_url": metadata.get("repository_url", None),
                         "active": True,
                         "meta_data": json.dumps({"auto_created": True, "source": "test_case_processor"}),
-                        "created_at": datetime.now(),
-                        "updated_at": datetime.now()
+                        "created_at": created_at,
+                        "updated_at": created_at
                     }
 
                     try:
@@ -374,8 +341,8 @@ class PostgresDBService:
                     "name": feature_name,
                     "description": "",
                     "project_id": project_id,  # Use the resolved project_id
-                    "created_at": datetime.now().replace(tzinfo=timezone.utc),
-                    "updated_at": datetime.now().replace(tzinfo=timezone.utc)
+                    "created_at": created_at,
+                    "updated_at": created_at
                 }
                 result = await session.execute(text(feature_insert), feature_params)
                 feature_id = result.scalar()
@@ -498,6 +465,12 @@ class PostgresDBService:
                 result = await session.execute(text(count_query), {"scenario_id": scenario_id})
                 order = result.scalar() + 1
 
+            # Ensure all datetime fields are timezone-aware
+            start_time = dt.ensure_utc_datetime(step.start_time if hasattr(step, 'start_time') else None)
+            end_time = dt.ensure_utc_datetime(step.end_time if hasattr(step, 'end_time') else None)
+            created_at = dt.now_utc()
+            updated_at = dt.now_utc()
+
             # Convert step to SQL parameters
             params = {
                 "scenario_id": scenario_id,
@@ -508,13 +481,13 @@ class PostgresDBService:
                 "duration": duration,
                 "error_message": step.error_message if hasattr(step, 'error_message') else None,
                 "stack_trace": step.stack_trace if hasattr(step, 'stack_trace') else None,
-                "start_time": None,
-                "end_time": None,
+                "start_time": start_time,
+                "end_time": end_time,
                 "screenshot_url": None,
                 "log_output": None,
                 "order": order,
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": created_at,
+                "updated_at": updated_at
             }
 
             # Insert the step
@@ -583,8 +556,8 @@ class PostgresDBService:
                     "repository_url": metadata.get("repository_url", None),
                     "active": True,
                     "meta_data": json.dumps({"auto_created": True, "source": "build_info_processor"}),
-                    "created_at": datetime.now().replace(tzinfo=timezone.utc),
-                    "updated_at": datetime.now().replace(tzinfo=timezone.utc)
+                    "created_at": dt.now_utc(),
+                    "updated_at": dt.now_utc()
                 }
 
                 try:
@@ -595,21 +568,27 @@ class PostgresDBService:
                     logger.warning(f"Failed to create project, will use project_id=null: {str(e)}")
                     project_id = None
 
+            # Ensure all datetime fields are timezone-aware
+            start_time = dt.ensure_utc_datetime(build_info.date if hasattr(build_info, 'date') else None)
+            end_time = dt.ensure_utc_datetime(build_info.end_date if hasattr(build_info, 'end_date') else None)
+            created_at = dt.now_utc()
+            updated_at = dt.now_utc()
+
             # Convert build info to SQL parameters
             params = {
                 "project_id": project_id,
                 "build_number": build_info.build_number,
                 "name": build_info.name if hasattr(build_info, 'name') else build_info.build_number,
                 "status": build_info.status,
-                "start_time": build_info.date if hasattr(build_info, 'date') else datetime.now(),
-                "end_time": None,
-                "duration": None,
+                "start_time": start_time,
+                "end_time": end_time,
+                "duration": build_info.duration if hasattr(build_info, 'duration') else None,
                 "branch": build_info.branch if hasattr(build_info, 'branch') else "main",
                 "commit_hash": build_info.commit_hash if hasattr(build_info, 'commit_hash') else None,
                 "environment": build_info.environment if hasattr(build_info, 'environment') else "dev",
                 "meta_data": json.dumps(metadata),
-                "created_at": datetime.now().replace(tzinfo=timezone.utc),
-                "updated_at": datetime.now().replace(tzinfo=timezone.utc)
+                "created_at": created_at,
+                "updated_at": updated_at
             }
 
             # Insert the build info
@@ -678,8 +657,8 @@ class PostgresDBService:
                     "repository_url": metadata.get("repository_url", None),
                     "active": True,
                     "meta_data": json.dumps({"auto_created": True, "source": "feature_processor"}),
-                    "created_at": datetime.now().replace(tzinfo=timezone.utc),
-                    "updated_at": datetime.now().replace(tzinfo=timezone.utc)
+                    "created_at": dt.now_utc(),
+                    "updated_at": dt.now_utc()
                 }
 
                 try:
@@ -690,6 +669,10 @@ class PostgresDBService:
                     logger.warning(f"Failed to create project, will use project_id=null: {str(e)}")
                     project_id = None
 
+            # Use now_utc() for consistent timestamp handling
+            created_at = dt.now_utc()
+            updated_at = dt.now_utc()
+
             # Convert feature to SQL parameters
             params = {
                 "name": feature.name,
@@ -697,8 +680,8 @@ class PostgresDBService:
                 "project_id": project_id,
                 "file_path": feature.file_path if hasattr(feature, 'file_path') else None,
                 "tags": feature.tags if hasattr(feature, 'tags') else [],
-                "created_at": datetime.now().replace(tzinfo=timezone.utc),
-                "updated_at": datetime.now().replace(tzinfo=timezone.utc)
+                "created_at": created_at,
+                "updated_at": updated_at
             }
 
             # Insert the feature
@@ -740,13 +723,22 @@ class PostgresDBService:
             vector_id: Vector database ID
         """
         try:
+            # Get current time for update
+            updated_at = dt.now_utc()
+
             query = """
             UPDATE test_runs 
-            SET meta_data = meta_data || ('{"vector_id": "' || :vector_id || '"}')::jsonb
+            SET 
+                meta_data = meta_data || ('{"vector_id": "' || :vector_id || '"}')::jsonb,
+                updated_at = :updated_at
             WHERE id = :pg_id
             """
 
-            await session.execute(text(query), {"pg_id": pg_id, "vector_id": vector_id})
+            await session.execute(text(query), {
+                "pg_id": pg_id,
+                "vector_id": vector_id,
+                "updated_at": updated_at
+            })
 
             logger.info(f"Updated test run {pg_id} with vector ID {vector_id}")
 
@@ -765,13 +757,22 @@ class PostgresDBService:
             vector_id: Vector database ID
         """
         try:
+            # Get current time for update
+            updated_at = dt.now_utc()
+
             query = """
             UPDATE scenarios 
-            SET meta_data = meta_data || ('{"vector_id": "' || :vector_id || '"}')::jsonb
+            SET 
+                meta_data = meta_data || ('{"vector_id": "' || :vector_id || '"}')::jsonb,
+                updated_at = :updated_at
             WHERE id = :pg_id
             """
 
-            await session.execute(text(query), {"pg_id": pg_id, "vector_id": vector_id})
+            await session.execute(text(query), {
+                "pg_id": pg_id,
+                "vector_id": vector_id,
+                "updated_at": updated_at
+            })
 
             logger.info(f"Updated scenario {pg_id} with vector ID {vector_id}")
 
@@ -790,13 +791,23 @@ class PostgresDBService:
             vector_id: Vector database ID
         """
         try:
+
+            # Get current time for update
+            updated_at = dt.now_utc()
+
             query = """
             UPDATE steps 
-            SET meta_data = ('{"vector_id": "' || :vector_id || '"}')::jsonb
+            SET 
+                meta_data = meta_data || ('{"vector_id": "' || :vector_id || '"}')::jsonb,
+                updated_at = :updated_at
             WHERE id = :pg_id
             """
 
-            await session.execute(text(query), {"pg_id": pg_id, "vector_id": vector_id})
+            await session.execute(text(query), {
+                "pg_id": pg_id,
+                "vector_id": vector_id,
+                "updated_at": updated_at
+            })
 
             logger.info(f"Updated step {pg_id} with vector ID {vector_id}")
 
@@ -815,13 +826,22 @@ class PostgresDBService:
             vector_id: Vector database ID
         """
         try:
+            # Get current time for update
+            updated_at = dt.now_utc()
+
             query = """
             UPDATE build_infos 
-            SET meta_data = meta_data || ('{"vector_id": "' || :vector_id || '"}')::jsonb
+            SET 
+                meta_data = COALESCE(meta_data, '{}'::jsonb) || ('{"vector_id": "' || :vector_id || '"}')::jsonb,
+                updated_at = :updated_at
             WHERE id = :pg_id
             """
 
-            await session.execute(text(query), {"pg_id": pg_id, "vector_id": vector_id})
+            await session.execute(text(query), {
+                "pg_id": pg_id,
+                "vector_id": vector_id,
+                "updated_at": updated_at
+            })
 
             logger.info(f"Updated build info {pg_id} with vector ID {vector_id}")
 
@@ -840,13 +860,23 @@ class PostgresDBService:
             vector_id: Vector database ID
         """
         try:
+
+            # Get current time for update
+            updated_at = dt.now_utc()
+
             query = """
             UPDATE features 
-            SET meta_data = ('{"vector_id": "' || :vector_id || '"}')::jsonb
+            SET 
+                meta_data = COALESCE(meta_data, '{}'::jsonb) || ('{"vector_id": "' || :vector_id || '"}')::jsonb,
+                updated_at = :updated_at
             WHERE id = :pg_id
             """
 
-            await session.execute(text(query), {"pg_id": pg_id, "vector_id": vector_id})
+            await session.execute(text(query), {
+                "pg_id": pg_id,
+                "vector_id": vector_id,
+                "updated_at": updated_at
+            })
 
             logger.info(f"Updated feature {pg_id} with vector ID {vector_id}")
 
