@@ -1,343 +1,139 @@
-# domain.py
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, field_validator, root_validator
 from datetime import datetime, timezone
-import uuid
+from uuid import uuid4, UUID
+from app.services import datetime_service as dt
 
 from .base import (
-    TestStatus,
-    BuildEnvironment,
-    Tag
+    TestStatus, NotificationStatus, NotificationPriority, NotificationChannel,
 )
 
+def default_id() -> str:
+    return str(uuid4())
 
-# Helper function to get timezone-aware UTC datetime
-def utcnow():
-    """Return current UTC datetime with timezone information."""
-    return datetime.now(timezone.utc)
+def default_timestamp() -> datetime:
+    return dt.now_utc()
 
-
-class BuildInfo(BaseModel):
-    """Comprehensive build information model."""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    build_number: str
-    project: Optional[str] = None
-    repository: Optional[str] = None
-    branch: Optional[str] = None
-    commit: Optional[str] = None
-
-    # Build metadata
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    duration: Optional[float] = None  # in seconds
-
-    # Build context
-    environment: Optional[BuildEnvironment] = None
-    status: Optional[str] = None
-
-    # Additional metadata
-    ci_url: Optional[str] = None
-    artifacts_url: Optional[str] = None
-    version: Optional[str] = None
-
-    # Extra context
-    author: Optional[str] = None
-    commit_message: Optional[str] = None
-
-    # Flexible metadata
-    extra_info: Dict[str, Any] = Field(default_factory=dict)
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "build_number": "1.2.3-RC1",
-                "project": "test-automation",
-                "branch": "main",
-                "commit": "abc123def456",
-                "environment": "staging",
-                "status": "completed"
-            }
-        }
-    )
-
-    def is_successful(self) -> bool:
-        """Determine if the build was successful."""
-        return self.status in ['completed', 'success']
-
-    def get_build_duration(self) -> Optional[float]:
-        """Calculate build duration if start and end times are available."""
-        if self.start_time and self.end_time:
-            # Ensure both datetimes are timezone-aware before subtraction
-            start = self.start_time if self.start_time.tzinfo else self.start_time.replace(tzinfo=timezone.utc)
-            end = self.end_time if self.end_time.tzinfo else self.end_time.replace(tzinfo=timezone.utc)
-            return (end - start).total_seconds()
-        return self.duration
-
-
-class StepEmbedding(BaseModel):
-    """Model representing an embedding attached to a test step."""
-    data: str
-    mime_type: str
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "data": "base64encodeddata",
-                "mime_type": "image/png"
-            }
-        }
-    )
 
 
 class Step(BaseModel):
-    """Model representing a test step."""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    keyword: str
+    id: str = Field(default_factory=default_id)
+    external_id: Optional[str] = None
     name: str
-    status: TestStatus
+    keyword: Optional[str] = None
+    status: str
+    duration: Optional[float] = 0.0
     error_message: Optional[str] = None
     stack_trace: Optional[str] = None
-    duration: Optional[float] = None
-    screenshot: Optional[str] = None
-    logs: Optional[List[str]] = None
-    embeddings: Optional[List[StepEmbedding]] = None  # Updated to use StepEmbedding type
-    start_time: Optional[datetime] = None  # Added for duration calculation
-    end_time: Optional[datetime] = None  # Added for duration calculation
+    embeddings: Optional[List[Dict[str, Any]]] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime] = Field(default_factory=default_timestamp)
+    updated_at: Optional[datetime] = Field(default_factory=default_timestamp)
+    order: Optional[str] = None
 
-    class Config:
-        use_enum_values = True
-        json_schema_extra = {
-            "example": {
-                "id": "step-123",
-                "keyword": "When",
-                "name": "User logs in",
-                "status": "PASSED",
-                "duration": 250.5,
-                "embeddings": [
-                    {
-                        "data": "base64encodeddata",
-                        "mime_type": "image/png"
-                    }
-                ]
-            }
-        }
+    @root_validator(pre=True)
+    def handle_external_id(cls, values):
+        if "id" in values:
+            values["external_id"] = values["id"]
+            values["id"] = str(uuid4())
+        return values
 
     def is_failed(self) -> bool:
-        """Check if the step failed."""
-        return self.status in [TestStatus.FAILED, TestStatus.ERROR]
+        return self.status.upper() in [TestStatus.FAILED, TestStatus.ERROR]
 
     def get_duration(self) -> Optional[float]:
-        """Calculate step duration."""
         if self.start_time and self.end_time:
-            # Ensure both datetimes are timezone-aware before subtraction
-            start = self.start_time if self.start_time.tzinfo else self.start_time.replace(tzinfo=timezone.utc)
-            end = self.end_time if self.end_time.tzinfo else self.end_time.replace(tzinfo=timezone.utc)
-            return (end - start).total_seconds() * 1000
+            start = dt.ensure_utc_datetime(self.start_time)
+            end = dt.ensure_utc_datetime(self.end_time)
+            return dt.duration_in_milliseconds(start, end)
         return self.duration
 
 
 class Scenario(BaseModel):
-    """Model representing a test scenario."""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    id: str = Field(default_factory=default_id)
+    external_id: Optional[str] = None
     name: str
-    description: Optional[str] = None
-    status: TestStatus
-    feature: str
-    feature_file: Optional[str] = None  # Added feature_file
-    tags: List[str] = Field(default_factory=list)
-    duration: Optional[float] = None
-    steps: List[Step] = Field(default_factory=list)
-    error_message: Optional[str] = None
-    retries: int = 0
-    is_flaky: bool = False  # Added is_flaky
-    embeddings: Optional[List[StepEmbedding]] = None  # Updated to use StepEmbedding type
-    start_time: Optional[datetime] = None  # Added for duration calculation
-    end_time: Optional[datetime] = None  # Added for duration calculation
+    description: Optional[str] = ""
+    status: str
+    duration: Optional[float] = 0.0
+    tags: Optional[List[str]] = []
+    feature: Optional[str] = None
+    feature_file: Optional[str] = None
+    test_run_id: Optional[str] = None
+    steps: List[Step]
+    embeddings: Optional[List[Dict[str, Any]]] = None
+    is_flaky: Optional[bool] = False
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime] = Field(default_factory=default_timestamp)
+    updated_at: Optional[datetime] = Field(default_factory=default_timestamp)
 
-    class Config:
-        use_enum_values = True
-        json_schema_extra = {
-            "example": {
-                "id": "scenario-123",
-                "name": "User Login Scenario",
-                "status": "PASSED",
-                "feature": "Authentication",
-                "feature_file": "/path/to/login.feature",
-                "tags": ["smoke", "login"],
-                "duration": 1500.5,
-                "is_flaky": False,
-                "embeddings": [
-                    {
-                        "data": "base64encodeddata",
-                        "mime_type": "image/png"
-                    }
-                ]
-            }
-        }
+    @root_validator(pre=True)
+    def handle_external_id(cls, values):
+        if "id" in values:
+            values["external_id"] = values["id"]
+            values["id"] = str(uuid4())
+        return values
 
     def is_failed(self) -> bool:
-        """Check if the scenario failed."""
-        return self.status in [TestStatus.FAILED, TestStatus.ERROR]
+        return self.status.upper() in [TestStatus.FAILED, TestStatus.ERROR]
 
     def get_failed_steps(self) -> List[Step]:
-        """Retrieve all failed steps in the scenario."""
-        return [step for step in self.steps if step.status in [TestStatus.FAILED, TestStatus.ERROR]]
+        return [step for step in self.steps if step.status.upper() in [TestStatus.FAILED, TestStatus.ERROR]]
 
-    def calculate_status(self) -> TestStatus:
-        """Calculate overall scenario status based on steps."""
+    def calculate_status(self) -> str:
         if not self.steps:
             return self.status
-
-        step_statuses = [step.status for step in self.steps]
-
+        step_statuses = [step.status.upper() for step in self.steps]
         if any(status == TestStatus.FAILED for status in step_statuses):
             return TestStatus.FAILED
         if any(status == TestStatus.ERROR for status in step_statuses):
             return TestStatus.ERROR
         if all(status == TestStatus.PASSED for status in step_statuses):
             return TestStatus.PASSED
-
         return TestStatus.UNDEFINED
 
     def get_total_duration(self) -> Optional[float]:
-        """Calculate total duration of steps."""
         if self.start_time and self.end_time:
-            # Ensure both datetimes are timezone-aware before subtraction
-            start = self.start_time if self.start_time.tzinfo else self.start_time.replace(tzinfo=timezone.utc)
-            end = self.end_time if self.end_time.tzinfo else self.end_time.replace(tzinfo=timezone.utc)
-            return (end - start).total_seconds() * 1000
-
+            start = dt.ensure_utc_datetime(self.start_time)
+            end = dt.ensure_utc_datetime(self.end_time)
+            return dt.duration_in_milliseconds(start, end)
         step_durations = [step.duration or 0 for step in self.steps]
         return sum(step_durations) if step_durations else self.duration
 
-
-class TestRun(BaseModel):
-    """Comprehensive test run model."""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-
-    # Run identification
-    name: str
-    description: Optional[str] = None
-
-    # Execution context
-    timestamp: datetime = Field(default_factory=utcnow)  # Updated to use timezone-aware utcnow
-    environment: str
-
-    # Run details
-    status: TestStatus
-    duration: float  # Total run duration in milliseconds
-
-    # Added start and end time for more accurate duration tracking
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-
-    # Scenarios
-    scenarios: List[Scenario] = Field(default_factory=list)
-
-    # Metadata
-    tags: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "name": "Nightly Regression Test",
-                "environment": "staging",
-                "status": "COMPLETED",
-                "scenarios": []
-            }
-        }
-    )
-
-    def get_statistics(self) -> Dict[str, Any]:
-        """Generate comprehensive test run statistics."""
-        total_scenarios = len(self.scenarios)
-
-        # Count scenarios by status
-        status_counts = {}
-        for status in TestStatus:
-            status_counts[status.value] = sum(
-                1 for scenario in self.scenarios if scenario.status == status
-            )
-
-        # Calculate pass rate
-        pass_rate = (
-                status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100) if total_scenarios > 0 else 0
-
-        # Calculate total duration from start/end times if available
-        if self.start_time and self.end_time:
-            # Ensure both datetimes are timezone-aware before subtraction
-            start = self.start_time if self.start_time.tzinfo else self.start_time.replace(tzinfo=timezone.utc)
-            end = self.end_time if self.end_time.tzinfo else self.end_time.replace(tzinfo=timezone.utc)
-            total_duration = (end - start).total_seconds() * 1000
-        else:
-            total_duration = sum(scenario.duration or 0 for scenario in self.scenarios)
-
-        return {
-            "total_scenarios": total_scenarios,
-            "status_counts": status_counts,
-            "pass_rate": round(pass_rate, 2),
-            "total_duration": total_duration,
-            "average_scenario_duration": total_duration / total_scenarios if total_scenarios > 0 else 0
-        }
-
-    def get_failing_scenarios(self) -> List[Scenario]:
-        """Retrieve scenarios that failed."""
-        return [
-            scenario for scenario in self.scenarios
-            if scenario.status in [TestStatus.FAILED, TestStatus.ERROR]
-        ]
-
-    def get_flaky_scenarios(self) -> List[Scenario]:
-        """Retrieve scenarios with retries."""
-        return [scenario for scenario in self.scenarios if scenario.retries > 0]
-
-
 class Feature(BaseModel):
-    """Detailed feature model."""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-
-    # Feature identification
+    id: str = Field(default_factory=default_id)
+    external_id: Optional[str] = None
     name: str
-    description: Optional[str] = None
+    description: Optional[str] = ""
+    uri: Optional[str] = None
+    tags: Optional[List[str]] = []
+    scenarios: List[Scenario]
+    project_id: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime] = Field(default_factory=default_timestamp)
+    updated_at: Optional[datetime] = Field(default_factory=default_timestamp)
 
-    # Feature context
-    file_path: Optional[str] = None
-    priority: Optional[str] = None
-    status: Optional[str] = None
-
-    # Scenarios and relationships
-    scenarios: List[Scenario] = Field(default_factory=list)
-
-    # Metadata
-    tags: List[str] = Field(default_factory=list)
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "name": "User Authentication",
-                "file_path": "features/auth.feature",
-                "priority": "high",
-                "scenarios": []
-            }
-        }
-    )
+    @root_validator(pre=True)
+    def handle_external_id(cls, values):
+        if "id" in values:
+            values["external_id"] = values["id"]
+            values["id"] = str(uuid4())
+        return values
 
     def get_feature_statistics(self) -> Dict[str, Any]:
-        """Generate comprehensive feature statistics."""
         total_scenarios = len(self.scenarios)
-
-        # Count scenarios by status
         status_counts = {}
         for status in TestStatus:
             status_counts[status.value] = sum(
                 1 for scenario in self.scenarios if scenario.status == status
             )
-
-        # Calculate pass rate
         pass_rate = (
-                status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100) if total_scenarios > 0 else 0
-
+            status_counts.get(TestStatus.PASSED.value, 0) / total_scenarios * 100
+        ) if total_scenarios > 0 else 0
         return {
             "total_scenarios": total_scenarios,
             "status_counts": status_counts,
@@ -345,11 +141,121 @@ class Feature(BaseModel):
         }
 
     def get_scenarios_by_tag(self, tag: str) -> List[Scenario]:
-        """Retrieve scenarios with a specific tag."""
         return [scenario for scenario in self.scenarios if tag in scenario.tags]
 
 
-# Aliases for backward compatibility
+class TestRun(BaseModel):
+    id: str = Field(default_factory=default_id)
+    external_id: Optional[str] = None
+    name: str
+    status: Optional[str] = None
+    environment: Optional[str] = "unknown"
+    timestamp: datetime
+    duration: Optional[float] = 0.0
+    branch: Optional[str] = None
+    commit_hash: Optional[str] = None
+    scenarios: List[Scenario]
+    runner: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    total_tests: int = 0
+    passed_tests: int = 0
+    failed_tests: int = 0
+    skipped_tests: int = 0
+    error_tests: int = 0
+    success_rate: float = 0.0
+    project_key: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime] = Field(default_factory=default_timestamp)
+    updated_at: Optional[datetime] = Field(default_factory=default_timestamp)
+
+    @root_validator(pre=True)
+    def handle_external_id(cls, values):
+        if "id" in values:
+            values["external_id"] = values["id"]
+            values["id"] = str(uuid4())
+        return values
+
+
+class BuildInfo(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    external_id: Optional[str] = None
+    name: str
+    build_number: str
+    status: str
+    branch: Optional[str] = None
+    commit_hash: Optional[str] = None
+    environment: Optional[str] = None
+    duration: Optional[float] = None
+    date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    project_id: Optional[str] = None
+
+    @field_validator("created_at", "updated_at", "date", "end_date", mode="before")
+    def ensure_utc(cls, value):
+        return dt.ensure_utc_datetime(value)
+
+    @root_validator(pre=True)
+    def handle_external_id(cls, values):
+        if "id" in values:
+            values["external_id"] = values["id"]
+            values["id"] = str(uuid4())
+        return values
+
+    def is_successful(self) -> bool:
+        return self.status in ["completed", "success", "PASSED"]
+
+    def get_build_duration(self) -> Optional[float]:
+        if self.date and self.end_date:
+            start = dt.ensure_utc_datetime(self.date)
+            end = dt.ensure_utc_datetime(self.end_date)
+            return (end - start).total_seconds()
+        return self.duration
+
+
+class Project(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    external_id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    repository_url: Optional[str] = None
+    active: bool = True
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @field_validator("created_at", "updated_at", mode="before")
+    def ensure_utc(cls, value):
+        return dt.ensure_utc_datetime(value)
+
+class Notification(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    external_id: Optional[str] = None
+    message: str
+    subject: Optional[str] = None
+    status: NotificationStatus = NotificationStatus.PENDING
+    priority: NotificationPriority = NotificationPriority.MEDIUM
+    channel: NotificationChannel
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=dt.now_utc)
+    updated_at: Optional[datetime] = None
+    sent_at: Optional[datetime] = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "message": "Build failed for commit abc123 on staging.",
+                "subject": "Build Alert",
+                "status": "PENDING",
+                "priority": "HIGH",
+                "channel": "SLACK"
+            }
+        }
+    }
+# Aliases for clarity
 TestCase = Scenario
 TestStep = Step
 Report = TestRun

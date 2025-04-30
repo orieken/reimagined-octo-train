@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   ollama:
     container_name: ollama
@@ -51,6 +50,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+#  playwright:
+#    image: mcr.microsoft.com/playwright/python:v1.43.0
+#    container_name: playwright
+#    depends_on:
+#      - postgres
+#      - qdrant
+#      - open-webui
+#      - ollama
+#      - your-fastapi-app-service-name
+#    working_dir: /tests
+#    volumes:
+#      - ./playwright:/tests
+#    environment:
+#      - BASE_URL=http://your-fastapi-app-service-name:8000
+#    command: ["pytest", "--maxfail=1", "--disable-warnings", "-v"]
+
 
 volumes:
   ollama: {}

@@ -8,7 +8,7 @@ from sqlalchemy import func, distinct, and_, or_, case
 from sqlalchemy.orm import Session, aliased
 from datetime import datetime, timedelta, timezone
 
-from app.models.database import TestCase, TestReport
+from friday.app.models.database import Report
 
 logger = logging.getLogger("friday.analytics")
 
@@ -76,7 +76,7 @@ def get_test_failure_metrics(
     try:
         # Base query to get test results within date range
         query = db.query(
-            func.date_trunc('day', TestReport.created_at).label('date'),
+            func.date_trunc('day', Report.created_at).label('date'),
             func.count().label('total_tests'),
             func.sum(case([(TestCase.status == 'passed', 1)], else_=0)).label('passed_tests'),
             func.sum(case([(TestCase.status == 'failed', 1)], else_=0)).label('failed_tests')

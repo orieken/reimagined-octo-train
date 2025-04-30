@@ -13,6 +13,7 @@ from app.api.routes import api_router
 from app.services.vector_db import VectorDBService
 # from app.services.worker_manager import worker_manager
 from app.services.notification import notification_manager
+from app.services.orchestrator import ServiceOrchestrator
 
 # Configure logging
 # Use DEBUG if LOG_LEVEL is not available
@@ -22,7 +23,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("friday")
-
 
 # Startup and shutdown event handlers
 @asynccontextmanager
@@ -37,11 +37,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Friday service...")
 
     # Initialize vector database connection
-    vector_db_service = VectorDBService(
-        url=settings.QDRANT_URL,
-        collection_name=settings.CUCUMBER_COLLECTION
-    )
-    await vector_db_service.initialize()
+    vector_db_service = VectorDBService()
 
     # Initialize notification service background tasks
     logger.info("Starting notification service...")
@@ -56,6 +52,11 @@ async def lifespan(app: FastAPI):
     if getattr(settings, "ENABLE_SYSTEM_NOTIFICATIONS", False):
         logger.info("Starting system notifications...")
         asyncio.create_task(send_periodic_notifications())
+
+    # Initialize orchestrator service
+    logger.info("Starting orchestrator service...")
+    orchestrator = ServiceOrchestrator()
+    # await orchestrator.ping_services()
 
     logger.info("Services initialized successfully.")
     yield

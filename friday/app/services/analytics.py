@@ -14,6 +14,7 @@ from app.services.orchestrator import ServiceOrchestrator
 from app.models import TrendAnalysis
 from app.models.schemas import TestFlakiness, TrendPoint, FailureCorrelation, PerformanceMetrics, \
     PerformanceTestData, AnalyticsResponse
+from app.services import datetime_service as dt
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ class AnalyticsService:
         )
 
         # Apply date filter
-        cutoff_date = datetime.now() - timedelta(days=days)
+        cutoff_date = dt.now_utc() - timedelta(days=days)
         filtered_reports = []
 
         for result in search_results:
@@ -64,7 +65,7 @@ class AnalyticsService:
                 # Parse timestamp and check if it's within the date range
                 timestamp = result.payload.get("timestamp", "")
                 if timestamp:
-                    result_date = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                    result_date = dt.parse_iso_datetime_to_utc(timestamp)
                     if result_date >= cutoff_date:
                         filtered_reports.append(result)
             except (ValueError, TypeError):
@@ -582,5 +583,5 @@ class AnalyticsService:
             correlations=correlations,
             days_analyzed=days,
             environment=environment,
-            timestamp=datetime.now().isoformat()
+            timestamp=dt.isoformat_utc(dt.now_utc())
         )

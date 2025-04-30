@@ -8,6 +8,7 @@ from typing import Dict, List, Any
 
 from app.core.processors.base import BaseProcessor
 from app.models.domain import ChunkMetadata, Feature, Scenario, Step, TestRun, TestStatus
+from app.services import datetime_service as dt
 
 
 class CucumberProcessor(BaseProcessor):
@@ -49,7 +50,7 @@ class CucumberProcessor(BaseProcessor):
         test_run_id = str(uuid.uuid4())
         test_run = TestRun(
             id=test_run_id,
-            timestamp=datetime.utcnow(),
+            timestamp=dt.now_utc(),
             features=features,
             build_info=None,  # Will be linked later with build info processor
             tags=metadata.get("tags", []),

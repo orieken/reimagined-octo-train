@@ -1,151 +1,51 @@
-# __init__.py
-"""
-Import and export models for the application.
+# app/models/__init__.py
 
-This module consolidates and exposes models from various categories:
+"""
+Import and export models for the application via auto-discovery.
+
+This module consolidates and exposes models from:
 - Base models (enums, foundational types)
 - Domain models (core business logic)
 - Schema models (API request/response structures)
-- Database models (SQLAlchemy ORM models)
+- Response models (HTTP API responses)
+- Search and analysis models
+- Database models (SQLAlchemy ORM)
 """
 
-# Base Models
-from .base import (
-    TestStatus,
-    ReportFormat,
-    ReportStatus,
-    ReportType,
-    BuildEnvironment,
-    NotificationPriority,
-    NotificationStatus,
-    NotificationChannel,
-    ChunkMetadata,
-    TextChunk,
-    TextEmbedding,
-    Tag
+from . import (
+    base as base_module,
+    domain as domain_module,
+    schemas as schemas_module,
+    responses as responses_module,
+    search_analysis as search_analysis_module,
+    notification as notification_module,
+    database as database_module
 )
 
-# Domain Models
-from .domain import (
-    BuildInfo,
-    Step,
-    Scenario,
-    TestRun,
-    Feature,
-    TestCase,
-    TestStep,
-    Report
-)
+# Collect public symbols from all submodules
+def public_symbols(module):
+    return {
+        name: getattr(module, name)
+        for name in dir(module)
+        if not name.startswith("_")
+    }
 
-# Schema Models
-from .schemas import (
-    ProjectBase,
-    ProjectCreate,
-    ProjectResponse,
-    TestRunBase,
-    TestRunCreate,
-    TestRunResponse,
-    FeatureBase,
-    FeatureCreate,
-    FeatureResponse,
-    ScenarioBase,
-    ScenarioCreate,
-    ScenarioResponse,
-    StepBase,
-    StepCreate,
-    StepResponse,
-    ReportBase,
-    ReportCreate,
-    ReportResponse,
-    TestStatistics,
-    FeatureStatistics,
-    BulkCreateRequest,
-    BulkCreateResponse
-)
+# Flatten all models into global scope
+globals().update(public_symbols(base_module))
+globals().update(public_symbols(domain_module))
+globals().update(public_symbols(schemas_module))
+globals().update(public_symbols(responses_module))
+globals().update(public_symbols(search_analysis_module))
+globals().update(public_symbols(notification_module))
+globals().update(public_symbols(database_module))
 
-# API Response Models
-from .responses import (
-    ErrorResponse,
-    SuccessResponse,
-    PaginatedResponse,
-    SearchResponse,
-    TestRunAnalyticsResponse,
-    FeatureAnalyticsResponse,
-    TestTrendResponse,
-    NotificationResponse,
-    ProcessingStatusResponse,
-    HealthCheckResponse,
-    BatchOperationResponse,
-    ProcessReportResponse
-)
-
-# Search and Analysis Models
-from .search_analysis import (
-    SearchQuery,
-    QueryResult,
-    AnalysisRequest,
-    AnalysisResult,
-    TrendAnalysis,
-    FlakinessSummary,
-    TestImpactAnalysis
-)
-
-# Import SQLAlchemy database models
-from .database import (
-    Project as DBProject,
-    TestReport as DBTestReport,
-    TestCase as DBTestCase,
-    TestRun as DBTestRun,
-    Scenario as DBScenario,
-    Step as DBStep,
-    Feature as DBFeature,
-    BuildInfo as DBBuildInfo,
-    TextChunk as DBTextChunk,
-    HealthMetric as DBHealthMetric,
-    BuildMetric as DBBuildMetric,
-    ReportTemplate as DBReportTemplate,
-    ReportSchedule as DBReportSchedule,
-    Report as DBReport,
-    SearchQuery as DBSearchQuery,
-    AnalysisRequest as DBAnalysisRequest,
-    AnalysisResult as DBAnalysisResult,
-    TestResultsTag as DBTestResultsTag
-)
-
-# Expose all models
-__all__ = [
-    # Base Models
-    'TestStatus', 'ReportFormat', 'ReportStatus', 'ReportType',
-    'BuildEnvironment', 'NotificationPriority', 'NotificationStatus',
-    'NotificationChannel', 'ChunkMetadata', 'TextChunk', 'TextEmbedding', 'Tag',
-
-    # Domain Models
-    'BuildInfo', 'Step', 'Scenario', 'TestRun', 'Feature',
-    'TestCase', 'TestStep', 'Report',
-
-    # Schema Models
-    'ProjectBase', 'ProjectCreate', 'ProjectResponse',
-    'TestRunBase', 'TestRunCreate', 'TestRunResponse',
-    'FeatureBase', 'FeatureCreate', 'FeatureResponse',
-    'ScenarioBase', 'ScenarioCreate', 'ScenarioResponse',
-    'StepBase', 'StepCreate', 'StepResponse',
-    'ReportBase', 'ReportCreate', 'ReportResponse',
-    'TestStatistics', 'FeatureStatistics',
-    'BulkCreateRequest', 'BulkCreateResponse',
-
-    # API Response Models
-    'ErrorResponse', 'SuccessResponse', 'PaginatedResponse',
-    'SearchResponse', 'TestRunAnalyticsResponse', 'FeatureAnalyticsResponse',
-    'TestTrendResponse', 'NotificationResponse', 'ProcessingStatusResponse',
-    'HealthCheckResponse', 'BatchOperationResponse', 'ProcessReportResponse'
-
-    # Search and Analysis Models
-    'SearchQuery', 'QueryResult', 'AnalysisRequest', 'AnalysisResult',
-    'TrendAnalysis', 'FlakinessSummary', 'TestImpactAnalysis',
-
-    # Database Models
-    'DBProject', 'DBTestReport', 'DBTestCase', 'DBTestRun', 'DBScenario',
-    'DBStep', 'DBFeature', 'DBBuildInfo', 'DBTextChunk', 'DBHealthMetric',
-    'DBBuildMetric', 'DBReportTemplate', 'DBReportSchedule', 'DBReport',
-    'DBSearchQuery', 'DBAnalysisRequest', 'DBAnalysisResult', 'DBTestResultsTag'
-]
+# Generate __all__ from all public symbols
+__all__ = sorted(set(
+    list(public_symbols(base_module).keys()) +
+    list(public_symbols(domain_module).keys()) +
+    list(public_symbols(schemas_module).keys()) +
+    list(public_symbols(responses_module).keys()) +
+    list(public_symbols(search_analysis_module).keys()) +
+    list(public_symbols(notification_module).keys()) +
+    list(public_symbols(database_module).keys())
+))

@@ -24,9 +24,7 @@ async def get_stats_summary(
         from qdrant_client.http import models as qdrant_models
 
         def base_filter(status: Optional[str] = None):
-            conditions = [
-                qdrant_models.FieldCondition(key="type", match=qdrant_models.MatchValue(value="test_case"))
-            ]
+            conditions = [qdrant_models.FieldCondition(key="type", match=qdrant_models.MatchValue(value="test_case"))]
             if status:
                 conditions.append(qdrant_models.FieldCondition(key="status", match=qdrant_models.MatchValue(value=status)))
             if environment:
@@ -70,10 +68,16 @@ async def get_stats_summary(
             failed_count = sum(1 for tc in all_test_cases if tc.payload.get("status") == "FAILED")
             pass_rate = passed_count / total_count if total_count else 0
 
-        report_ids, tag_counts, skipped_count, total_duration = set(), {}, 0, 0
+        report_ids = set()
+        external_report_ids = set()
+        tag_counts = {}
+        skipped_count = 0
+        total_duration = 0
+
         for tc in all_test_cases:
             payload = tc.payload
-            report_ids.add(payload.get("report_id"))
+            report_ids.add(payload.get("pg_id"))
+            external_report_ids.add(payload.get("report_id"))
             for tag in payload.get("tags", []):
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
             if payload.get("status") == "SKIPPED":
@@ -87,6 +91,7 @@ async def get_stats_summary(
             "time_period": f"Last {days} days",
             "environment": environment or "All",
             "unique_builds": len(report_ids),
+            "external_reports": list(external_report_ids),
             "total_scenarios": total_count,
             "passed_scenarios": passed_count,
             "failed_scenarios": failed_count,
@@ -99,7 +104,6 @@ async def get_stats_summary(
     except Exception as e:
         logger.error(f"Error retrieving stats summary: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve stats summary: {str(e)}")
-
 
 @router.get("/stats", response_model=Dict[str, Any])
 async def get_stats(
@@ -158,9 +162,11 @@ async def get_stats(
             pass_rate = passed_count / total_count if total_count else 0
 
         report_ids = set()
+        external_report_ids = set()
         tag_counts = {}
         for tc in all_test_cases:
-            report_ids.add(tc.payload.get("report_id"))
+            report_ids.add(tc.payload.get("pg_id"))
+            external_report_ids.add(tc.payload.get("report_id"))
             for tag in tc.payload.get("tags", []):
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
@@ -174,6 +180,7 @@ async def get_stats(
                 "failed_scenarios": failed_count,
                 "pass_rate": pass_rate,
                 "unique_builds": len(report_ids),
+                "external_reports": list(external_report_ids),
                 "top_tags": top_tags
             }
         }

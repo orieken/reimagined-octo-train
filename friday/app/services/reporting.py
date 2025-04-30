@@ -16,6 +16,7 @@ from enum import Enum
 from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.services.analytics import AnalyticsService
+from app.services import datetime_service as dt
 
 from app.models import ReportStatus, ReportType, Report
 from app.models.schemas import ReportTemplate, ReportSchedule
@@ -71,7 +72,7 @@ class ReportingService:
 
                 for schedule_id, schedule in self.scheduled_reports.items():
                     # Parse next_run with timezone info or add UTC timezone
-                    next_run = datetime.fromisoformat(schedule.next_run)
+                    next_run = dt.parse_iso_datetime_to_utc(schedule.next_run)
                     if next_run.tzinfo is None:
                         next_run = next_run.replace(tzinfo=timezone.utc)
 

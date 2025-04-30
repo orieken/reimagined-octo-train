@@ -15,6 +15,7 @@ class TestStatus(str, Enum):
     RUNNING = "RUNNING"
     ERROR = "ERROR"
     UNDEFINED = "UNDEFINED"
+    UNKNOWN = "UNKNOWN"
 
 
 class ReportFormat(str, Enum):

@@ -137,4 +137,3 @@ def complexity(c):
     print("Calculating cyclomatic complexity using Radon...")
     c.run('radon cc -s -a . --exclude "test*,sample_report.py,tasks.py"', pty=True)
     print("✓ Cyclomatic complexity analysis completed")
-

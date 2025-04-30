@@ -26,7 +26,7 @@ config = context.config
 if 'DATABASE_URL' in os.environ:
     config.set_main_option('sqlalchemy.url', os.environ['DATABASE_URL'])
 else:
-    config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
+    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace('+asyncpg', ''))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

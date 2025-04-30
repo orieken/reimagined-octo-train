@@ -89,15 +89,15 @@ async def get_test_results(
 
 async def get_results_from_qdrant(
     orchestrator: ServiceOrchestrator,
-    build_id: Optional[int],
-    test_run_id: Optional[int],
+    build_id: Optional[UUID],
+    test_run_id: Optional[UUID],
     feature_name: Optional[str],
     start_date: Optional[datetime],
     end_date: Optional[datetime],
     limit_days: Optional[int],
     tag: Optional[str],
     status: Optional[str],
-    project_id: Optional[int],
+    project_id: Optional[UUID],
     environment: Optional[str],
     background_tasks: BackgroundTasks
 ) -> ResultsResponse:
@@ -112,11 +112,11 @@ async def get_results_from_qdrant(
     if environment:
         test_case_filter.must.append(qdrant_models.FieldCondition(key="environment", match=qdrant_models.MatchValue(value=environment)))
     if build_id:
-        test_case_filter.must.append(qdrant_models.FieldCondition(key="build_id", match=qdrant_models.MatchValue(value=build_id)))
+        test_case_filter.must.append(qdrant_models.FieldCondition(key="build_id", match=qdrant_models.MatchValue(value=str(build_id))))
     if test_run_id:
-        test_case_filter.must.append(qdrant_models.FieldCondition(key="test_run_id", match=qdrant_models.MatchValue(value=test_run_id)))
+        test_case_filter.must.append(qdrant_models.FieldCondition(key="test_run_id", match=qdrant_models.MatchValue(value=str(test_run_id))))
     if project_id:
-        test_case_filter.must.append(qdrant_models.FieldCondition(key="project_id", match=qdrant_models.MatchValue(value=project_id)))
+        test_case_filter.must.append(qdrant_models.FieldCondition(key="project_id", match=qdrant_models.MatchValue(value=str(project_id))))
     if status:
         test_case_filter.must.append(qdrant_models.FieldCondition(key="status", match=qdrant_models.MatchValue(value=status.upper())))
     if tag:
@@ -224,25 +224,24 @@ async def get_results_from_qdrant(
         }
     )
 
+
 async def get_results_from_sql(
     db: Session,
-    build_id: Optional[int] = None,
-    test_run_id: Optional[int] = None,
+    build_id: Optional[UUID] = None,
+    test_run_id: Optional[UUID] = None,
     feature_name: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     limit_days: Optional[int] = 30,
     tag: Optional[str] = None,
     status: Optional[str] = None,
-    project_id: Optional[int] = None,
+    project_id: Optional[UUID] = None,
     environment: Optional[str] = None,
-    background_tasks: BackgroundTasks = BackgroundTasks(),
+    background_tasks: BackgroundTasks = BackgroundTasks()
 ) -> ResultsResponse:
     try:
-        # Ensure end_date is set to UTC now if not provided
         if not end_date:
             end_date = dt.now_utc()
-
         if not start_date and limit_days:
             start_date = end_date - timedelta(days=max(limit_days, 90))
 
@@ -253,11 +252,11 @@ async def get_results_from_sql(
         if end_date:
             filter_conditions.append(DBScenario.end_time <= end_date)
         if build_id:
-            filter_conditions.append(DBTestRun.build_id == build_id)
+            filter_conditions.append(DBTestRun.uuid == str(build_id))
         if test_run_id:
-            filter_conditions.append(DBScenario.test_run_id == test_run_id)
+            filter_conditions.append(DBScenario.test_run_id == str(test_run_id))
         if project_id:
-            filter_conditions.append(DBTestRun.project_id == project_id)
+            filter_conditions.append(DBTestRun.project_id == str(project_id))
         if feature_name:
             filter_conditions.append(DBFeature.name.ilike(f"%{feature_name}%"))
         if status:
@@ -270,7 +269,7 @@ async def get_results_from_sql(
             filter_conditions.append(DBTestRun.environment == environment)
 
         base_query = db.query(DBScenario).join(
-            DBTestRun, DBScenario.test_run_id == DBTestRun.id
+            DBTestRun, DBScenario.test_run_id == DBTestRun.uuid
         ).join(
             DBFeature, DBScenario.feature_id == DBFeature.id, isouter=True
         )
@@ -288,7 +287,7 @@ async def get_results_from_sql(
             func.sum(case((DBScenario.status == TestStatus.SKIPPED, 1), else_=0)).label("skipped"),
             func.max(DBScenario.updated_at).label("last_updated")
         ).select_from(DBScenario).join(
-            DBTestRun, DBScenario.test_run_id == DBTestRun.id
+            DBTestRun, DBScenario.test_run_id == DBTestRun.uuid
         ).join(
             DBFeature, DBScenario.feature_id == DBFeature.id, isouter=True
         )
@@ -326,7 +325,7 @@ async def get_results_from_sql(
         ).join(
             DBScenario, DBFeature.id == DBScenario.feature_id
         ).join(
-            DBTestRun, DBScenario.test_run_id == DBTestRun.id
+            DBTestRun, DBScenario.test_run_id == DBTestRun.uuid
         )
 
         for condition in filter_conditions:
@@ -362,7 +361,7 @@ async def get_results_from_sql(
         ).join(
             DBScenario, DBScenarioTag.scenario_id == DBScenario.id
         ).join(
-            DBTestRun, DBScenario.test_run_id == DBTestRun.id
+            DBTestRun, DBScenario.test_run_id == DBTestRun.uuid
         ).join(
             DBFeature, DBScenario.feature_id == DBFeature.id, isouter=True
         )

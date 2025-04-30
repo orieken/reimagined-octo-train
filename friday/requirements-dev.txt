@@ -10,6 +10,7 @@ pytest-cov
 httpx
 respx
 aiohttp
+aiosqlite
 
 # Linting and formatting
 black

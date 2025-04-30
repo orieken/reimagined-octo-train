@@ -11,8 +11,6 @@ from app.database.dependencies import get_db
 
 from app.models.database import Project, BuildMetric, TestCase, Report
 
-# from app.database.models import TestReport, TestCase, BuildMetric
-
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 

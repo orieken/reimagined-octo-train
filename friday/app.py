@@ -3,18 +3,15 @@ from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any, Optional
 import uvicorn
-import json
 import os
-import time
-from datetime import datetime
 import httpx
 from pydantic import BaseModel
-import numpy as np
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
 
-from friday.app.config import settings
+from app.config import settings
+from app.services import datetime_service as dt
 
 # Initialize the FastAPI app
 app = FastAPI(
@@ -172,11 +169,11 @@ async def process_cucumber_reports(report: CucumberReport):
 
     # Generate timestamp if not provided
     if not report.timestamp:
-        report.timestamp = datetime.now().isoformat()
+        report.timestamp = dt.isoformat_utc(dt.now_utc())
 
     # Generate build_id if not provided
     if not report.build_id:
-        report.build_id = f"build_{int(time.time())}"
+        report.build_id = f"build_{int(dt.now_utc().timestamp())}"
 
     # Extract text from reports
     texts, metadata = extract_text_from_cucumber_report(report.report_json)
@@ -238,7 +235,7 @@ async def process_build_info(build_info: BuildInfo):
         collection_name=COLLECTIONS["build_info"]["name"],
         points=[
             qdrant_models.PointStruct(
-                id=int(time.time()),
+                id=int(dt.now_utc().timestamp()),
                 vector=embedding.tolist(),
                 payload=meta
             )

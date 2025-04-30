@@ -36,9 +36,9 @@ class Settings(BaseSettings):
     # Vector DB settings
     QDRANT_URL: str = Field(default="http://localhost:6333")
     QDRANT_COLLECTION: str = Field(default="friday_tests")
-    QDRANT_VECTOR_SIZE: int = Field(default=1536)  # Depends on embedding model
+    QDRANT_VECTOR_SIZE: int = Field(default=384)  # Depends on embedding model
     VECTOR_DB_TYPE: str = "qdrant"
-    VECTOR_DIMENSION: int = 1536
+    VECTOR_DIMENSION: int = 384
     CUCUMBER_COLLECTION: str = "test_artifacts"
     BUILD_INFO_COLLECTION: str = "build_info"
 

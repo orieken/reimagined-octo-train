@@ -9,20 +9,12 @@ from app.config import settings
 @lru_cache()
 def get_vector_db_service():
     """Get a VectorDBService instance (singleton) with configuration from settings."""
-    return VectorDBService(
-        url=settings.QDRANT_URL,
-        collection_name=settings.CUCUMBER_COLLECTION,
-        vector_size=settings.VECTOR_DIMENSION
-    )
+    return VectorDBService()
 
 @lru_cache()
 def get_llm_service():
     """Get a LLMService instance (singleton) with configuration from settings."""
-    return LLMService(
-        url=settings.OLLAMA_API_URL,
-        model=settings.LLM_MODEL,
-        timeout=settings.LLM_TIMEOUT
-    )
+    return LLMService()
 
 @lru_cache()
 def get_orchestrator_service():
