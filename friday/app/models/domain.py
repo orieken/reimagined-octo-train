@@ -59,8 +59,10 @@ class Scenario(BaseModel):
     status: str
     duration: Optional[float] = 0.0
     tags: Optional[List[str]] = []
+    tag_metadata: Optional[Dict[str, Dict[str, Any]]] = Field(default_factory=dict)
     feature: Optional[str] = None
     feature_file: Optional[str] = None
+    feature_id: Optional[str] = None
     test_run_id: Optional[str] = None
     steps: List[Step]
     embeddings: Optional[List[Dict[str, Any]]] = None

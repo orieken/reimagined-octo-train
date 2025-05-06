@@ -7,14 +7,14 @@ from app.api.routes import(
     # analysis,
     # test_results,
     # failures,
-    # trends,
+    trends,
     health,
     # query,
     stats,
     notification,
     # reporting,
     # analytics,
-    # results,
+    results,
                            # Adding new Phase 2 routes
                            # webhooks, workers
                            )
@@ -28,13 +28,13 @@ api_router.include_router(processor.router)
 api_router.include_router(stats.router)
 # api_router.include_router(test_results.router)
 api_router.include_router(health.router)
-# api_router.include_router(trends.router)
+api_router.include_router(trends.router)
 # api_router.include_router(failures.router)
 # api_router.include_router(analysis.router)
 api_router.include_router(notification.router)
 # api_router.include_router(reporting.router)
 # api_router.include_router(analytics.router)
-# api_router.include_router(results.router)
+api_router.include_router(results.router)
 
 # Phase 2 routes
 # api_router.include_router(webhooks.router)

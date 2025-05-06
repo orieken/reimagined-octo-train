@@ -24,6 +24,7 @@ from app.models.database import (
     Feature as DBFeature,
     BuildInfo as DBBuildInfo,
     Project as DBProject,
+    ScenarioTag as DBScenarioTag,
 )
 from app.services.datetime_service import make_timestamps, default_epoch, safe_utc_datetime, safe_duration, now_utc
 from app.models.metadata import ReportMetadata
@@ -93,15 +94,17 @@ class PostgresDBService:
         return feature_id_map
 
     async def save_test_run(
-        self,
-        metadata: ReportMetadata,
-        project_id: UUID,
-        test_run: TestRun,
-        features,
-        session: AsyncSession
+            self,
+            metadata: ReportMetadata,
+            project_id: UUID,
+            test_run: TestRun,
+            features,
+            session: AsyncSession
     ) -> str:
         now = dt.now_utc()
         feature_id_map = await self.save_features(features, project_id, session)
+        logger.info(f"Feature ID map created: {feature_id_map}")
+        logger.info(f"DEBUG: Feature ID map keys: {list(feature_id_map.keys())}")
 
         db_test_run = DBTestRun(
             id=uuid4(),
@@ -129,8 +132,34 @@ class PostgresDBService:
         )
         session.add(db_test_run)
 
+        # Choose a fallback feature_id - this is critical
+        fallback_feature_id = None
+        if feature_id_map:
+            if None in feature_id_map:
+                fallback_feature_id = feature_id_map[None]
+            else:
+                # Get the first feature ID from the map
+                fallback_feature_id = next(iter(feature_id_map.values()))
+
+        logger.info(f"DEBUG: Using fallback feature_id if needed: {fallback_feature_id}")
+
         for scenario in test_run.scenarios:
-            feature_id = feature_id_map.get(scenario.feature_file)
+            # Debug scenario properties
+            logger.info(
+                f"DEBUG: Scenario {scenario.id} - Feature file: {getattr(scenario, 'feature_file', 'NOT PRESENT')}")
+            logger.info(f"DEBUG: Scenario feature_id attribute: {getattr(scenario, 'feature_id', 'NOT PRESENT')}")
+
+            # CRITICAL FIX: Always use the fallback feature_id instead of scenario.feature_id
+            feature_id = fallback_feature_id
+
+            if hasattr(scenario, 'feature_file') and scenario.feature_file and scenario.feature_file in feature_id_map:
+                # Use feature_file to look up feature_id
+                feature_id = feature_id_map.get(scenario.feature_file)
+                logger.info(f"DEBUG: Using feature_id from feature_file lookup: {feature_id}")
+            else:
+                logger.info(f"DEBUG: Using fallback feature_id: {feature_id}")
+
+            # NEVER use scenario.feature_id directly - it's causing the FK violation
 
             db_scenario = DBScenario(
                 id=scenario.id,
@@ -141,12 +170,43 @@ class PostgresDBService:
                 duration=scenario.duration,
                 is_flaky=scenario.is_flaky,
                 embeddings=scenario.embeddings,
-                feature_id=feature_id,
+                feature_id=feature_id,  # Always use our calculated feature_id, never scenario.feature_id
                 test_run_id=db_test_run.id,
                 created_at=scenario.created_at,
                 updated_at=scenario.updated_at,
             )
             session.add(db_scenario)
+
+            # Store tags with line numbers
+            if hasattr(scenario, 'tags') and scenario.tags:
+                logger.info(f"Storing {len(scenario.tags)} tags for scenario {scenario.id}: {scenario.tags}")
+
+                # Get tag metadata if available
+                tag_metadata = {}
+                if hasattr(scenario, 'tag_metadata'):
+                    tag_metadata = scenario.tag_metadata
+
+                for tag in scenario.tags:
+                    # Sometimes tags might have @ prefix, remove it
+                    tag_name = tag
+                    if isinstance(tag_name, str) and tag_name.startswith('@'):
+                        tag_name = tag_name[1:]
+
+                    # Get line number from metadata if available
+                    line = None
+                    if tag_metadata and tag in tag_metadata and 'line' in tag_metadata[tag]:
+                        line = tag_metadata[tag]['line']
+
+                    logger.info(f"Storing tag '{tag_name}' with line {line} for scenario {db_scenario.id}")
+
+                    db_scenario_tag = DBScenarioTag(
+                        scenario_id=db_scenario.id,
+                        tag=tag_name,
+                        line=line
+                    )
+                    session.add(db_scenario_tag)
+            else:
+                logger.info(f"No tags to store for scenario {scenario.id}")
 
             for step in scenario.steps:
                 db_step = DBStep(

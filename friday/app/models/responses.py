@@ -147,3 +147,31 @@ class AnalysisResponse(BaseModel):
     query: SearchQueryResponse
     results: List[AnalysisResultResponse]
     metadata: Optional[Dict[str, Any]] = None
+
+
+class FeatureStats(BaseModel):
+    name: str
+    passed_scenarios: int
+    failed_scenarios: int
+    skipped_scenarios: int
+
+class TagStats(BaseModel):
+    count: int
+    pass_rate: float
+    passed: Optional[int] = None
+    failed: Optional[int] = None
+    skipped: Optional[int] = None
+
+class ResultsData(BaseModel):
+    total_scenarios: int
+    passed_scenarios: int
+    failed_scenarios: int
+    skipped_scenarios: int
+    pass_rate: float
+    last_updated: str
+    features: List[FeatureStats]
+    tags: Dict[str, TagStats]
+
+class ResultsResponse(BaseModel):
+    status: str
+    results: ResultsData

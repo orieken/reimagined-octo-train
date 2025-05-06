@@ -128,13 +128,18 @@ class Scenario(Base):
     steps = relationship("Step", back_populates="scenario")
     tags = relationship("ScenarioTag", back_populates="scenario", cascade="all, delete-orphan")
 
+
 class ScenarioTag(Base):
     __tablename__ = "scenario_tags"
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    scenario_id = Column(PG_UUID(as_uuid=True), ForeignKey("scenarios.id"), nullable=False)
     tag = Column(String, nullable=False)
-    scenario_id = Column(PG_UUID(as_uuid=True), ForeignKey("scenarios.id"))
+    line = Column(Integer, nullable=True)  # Add line number column
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Add relationship if needed
     scenario = relationship("Scenario", back_populates="tags")
 
 class Step(Base):

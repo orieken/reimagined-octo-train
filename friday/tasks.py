@@ -8,6 +8,7 @@ import task_modules.db
 # import task_modules.docker
 # import task_modules.chores
 # import task_modules.cucumber
+import task_modules.tags
 import task_modules.vector
 import task_modules.test
 import task_modules.int
@@ -92,6 +93,7 @@ ns = Collection(
     # task_modules.cucumber,
     task_modules.vector,
     task_modules.test,
+    task_modules.tags,
     task_modules.int,
     run_local,
     run,

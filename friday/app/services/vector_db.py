@@ -10,13 +10,14 @@ logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "test_artifacts"
 
-
 class VectorDBService:
     def __init__(self):
         self.client = QdrantClient(
             url=settings.QDRANT_URL,
             timeout=10,
         )
+        self.cucumber_collection = settings.CUCUMBER_COLLECTION or COLLECTION_NAME
+        self.build_info_collection = settings.BUILD_INFO_COLLECTION or "build_info"
 
     async def ping(self) -> bool:
         try:
