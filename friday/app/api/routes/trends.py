@@ -8,6 +8,9 @@ from app.config import settings
 from app.services.orchestrator import ServiceOrchestrator
 from app.api.dependencies import get_orchestrator_service
 from app.services import datetime_service as dt
+from qdrant_client.http import models as qdrant_models
+from app.models.database import Scenario as DBScenario, Feature as DBFeature, ScenarioTag as DBScenarioTag, TestRun as DBTestRun, BuildInfo as DBBuildInfo
+from sqlalchemy import select, between, UUID, and_
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +22,11 @@ async def get_trends(
         time_range: str = Query("week", description="Time range for trend analysis: 'week', 'month', or 'quarter'"),
         feature: Optional[str] = Query(None, description="Filter results by feature"),
         tag: Optional[str] = Query(None, description="Filter results by tag"),
+        query: Optional[str] = Query(None, description="Semantic search query"),
         orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
 ):
     try:
-        # Setup time range
+        # Set time range
         end_date = dt.now_utc()
         start_date = {
             "week": end_date - timedelta(days=7),
@@ -30,146 +34,484 @@ async def get_trends(
             "quarter": end_date - timedelta(days=90)
         }.get(time_range, end_date - timedelta(days=7))
 
-        client = orchestrator.vector_db.client
-        collection = orchestrator.vector_db.cucumber_collection
-
-        from qdrant_client.http import models as qdrant_models
-
-        # Use 'scenario' instead of 'test_case' to match our data structure
-        base_filter = qdrant_models.Filter(must=[
-            qdrant_models.FieldCondition(key="type", match=qdrant_models.MatchValue(value="scenario"))
-        ])
-
-        if feature:
-            base_filter.must.append(
-                qdrant_models.FieldCondition(key="feature", match=qdrant_models.MatchValue(value=feature)))
-        if tag:
-            base_filter.must.append(qdrant_models.FieldCondition(key="tags", match=qdrant_models.MatchAny(any=[tag])))
-
-        # Retrieve all matching scenarios
-        all_scenarios, offset = [], None
-        while True:
-            batch, offset = client.scroll(
-                collection_name=collection,
-                scroll_filter=base_filter,
-                limit=1000,
-                offset=offset,
-                with_payload=True,
-                with_vectors=False
+        # STEP 1: Get test runs within the time range from PostgreSQL
+        async with orchestrator.pg_service.session() as session:
+            # Query test runs within the date range
+            test_runs_query = select(DBTestRun).where(
+                between(DBTestRun.created_at, start_date, end_date)
             )
-            all_scenarios.extend(batch)
-            if offset is None or len(batch) < 1000:
-                break
+            result = await session.execute(test_runs_query)
+            test_runs = result.scalars().all()
 
-        logger.info(f"Retrieved {len(all_scenarios)} scenarios for trend analysis")
+            if not test_runs:
+                logger.info(f"No test runs found in time range {time_range}")
+                return {
+                    "status": "success",
+                    "trends": {"daily": [], "builds": [], "top_failures": []},
+                    "debug_info": {
+                        "total_scenarios": 0,
+                        "filtered": 0,
+                        "time_range": time_range,
+                        "start": dt.isoformat_utc(start_date),
+                        "end": dt.isoformat_utc(end_date),
+                        "feature": feature,
+                        "tag": tag,
+                        "query": query
+                    }
+                }
 
-        # Since our scenarios may not have timestamps, we need to get them from reports
-        # First, collect all test_run_ids from our scenarios
-        test_run_ids = set()
-        for scenario in all_scenarios:
-            test_run_id = scenario.payload.get("test_run_id")
-            if test_run_id:
-                test_run_ids.add(test_run_id)
+            test_run_ids = [str(tr.id) for tr in test_runs]
+            logger.info(f"Found {len(test_run_ids)} test runs in time range")
 
-        # Now get the reports with these IDs to get their timestamps
-        report_filter = qdrant_models.Filter(must=[
-            qdrant_models.FieldCondition(key="type", match=qdrant_models.MatchValue(value="report")),
-            qdrant_models.FieldCondition(key="id", match=qdrant_models.MatchAny(any=list(test_run_ids)))
-        ])
+            # STEP 2A: If semantic query is provided, use vector DB to get relevant scenarios
+            scenario_ids = []
+            if query:
+                try:
+                    # Generate embedding for the query
+                    query_embedding = await orchestrator.llm.embed_text(query)
 
-        reports, report_offset = [], None
-        while True and test_run_ids:  # Only fetch if we have test_run_ids
-            batch, report_offset = client.scroll(
-                collection_name=collection,
-                scroll_filter=report_filter,
-                limit=1000,
-                offset=report_offset,
-                with_payload=True,
-                with_vectors=False
-            )
-            reports.extend(batch)
-            if report_offset is None or len(batch) < 1000:
-                break
+                    client = orchestrator.vector_db.client
+                    collection = orchestrator.vector_db.cucumber_collection
 
-        logger.info(f"Retrieved {len(reports)} reports with timestamps")
+                    from qdrant_client.http import models as qdrant_models
 
-        # Create a mapping of test_run_id to timestamp
-        report_timestamps = {}
-        for report in reports:
-            report_id = report.id
-            timestamp = report.payload.get("timestamp")
-            if report_id and timestamp:
-                report_timestamps[report_id] = timestamp
+                    # Create filter for scenarios from our test runs
+                    vector_db_filter = qdrant_models.Filter(
+                        must=[
+                            qdrant_models.FieldCondition(
+                                key="type",
+                                match=qdrant_models.MatchValue(value="scenario")
+                            ),
+                            qdrant_models.FieldCondition(
+                                key="test_run_id",
+                                match=qdrant_models.MatchAny(any=test_run_ids)
+                            )
+                        ]
+                    )
 
-        # Filter scenarios by associating them with report timestamps
-        filtered = []
-        for scenario in all_scenarios:
-            test_run_id = scenario.payload.get("test_run_id")
-            if not test_run_id or test_run_id not in report_timestamps:
-                continue
+                    # Search for similar scenarios
+                    search_results = client.search(
+                        collection_name=collection,
+                        query_vector=query_embedding,
+                        query_filter=vector_db_filter,
+                        limit=100
+                    )
 
-            raw_ts = report_timestamps[test_run_id]
-            if not raw_ts:
-                continue
+                    # Extract scenario IDs from search results
+                    for result in search_results:
+                        if 'id' in result.payload:
+                            scenario_ids.append(result.payload['id'])
 
-            try:
-                parsed_ts = dt.parse_iso_datetime_to_utc(raw_ts)
-                if start_date <= parsed_ts <= end_date:
-                    filtered.append((parsed_ts, scenario.payload))
-            except Exception as e:
-                logger.error(f"Error parsing timestamp {raw_ts}: {e}")
-                continue
+                    logger.info(f"Vector search found {len(scenario_ids)} relevant scenarios")
 
-        logger.info(f"Filtered to {len(filtered)} scenarios within time range")
+                    # If no results from vector search, return empty
+                    if not scenario_ids:
+                        return {
+                            "status": "success",
+                            "trends": {"daily": [], "builds": [], "top_failures": []},
+                            "debug_info": {
+                                "total_scenarios": 0,
+                                "filtered": 0,
+                                "time_range": time_range,
+                                "start": dt.isoformat_utc(start_date),
+                                "end": dt.isoformat_utc(end_date),
+                                "feature": feature,
+                                "tag": tag,
+                                "query": query
+                            }
+                        }
 
-        # Aggregate daily
-        daily = {}
-        for ts, payload in filtered:
-            key = ts.strftime("%Y-%m-%d")
-            display = ts.strftime("%b %-d")
-            entry = daily.setdefault(key, {
-                "date": display,
-                "total_scenarios": 0,
-                "passed_scenarios": 0,
-                "failed_scenarios": 0,
-                "pass_rate": 0.0
-            })
-            entry["total_scenarios"] += 1
-            status = payload.get("status", "").upper()
-            if status == "PASSED":
-                entry["passed_scenarios"] += 1
-            elif status == "FAILED":
-                entry["failed_scenarios"] += 1
+                except Exception as e:
+                    logger.error(f"Vector search error: {str(e)}")
+                    # Fall back to regular filtering if vector search fails
+                    scenario_ids = []
 
-        for entry in daily.values():
-            total = entry["total_scenarios"]
-            passed = entry["passed_scenarios"]
-            if total > 0:
-                entry["pass_rate"] = round(passed / total, 3)
+            # STEP 2B: Get scenarios based on filters
+            if scenario_ids:
+                # Use scenario IDs from vector search
+                scenarios_query = select(DBScenario).where(
+                    DBScenario.id.in_([UUID(id) for id in scenario_ids if id])
+                )
+            else:
+                # No semantic query, use regular filtering
+                scenarios_query = select(DBScenario).where(
+                    DBScenario.test_run_id.in_([tr.id for tr in test_runs])
+                )
 
-        daily_trends = sorted(daily.values(), key=lambda x: x["date"])
+            # Add feature filter if specified
+            if feature:
+                scenarios_query = scenarios_query.join(
+                    DBFeature,
+                    DBScenario.feature_id == DBFeature.id
+                ).where(DBFeature.name == feature)
 
-        return {
-            "status": "success",
-            "trends": {
-                "daily": daily_trends,
-                "builds": [],  # Stubbed
-                "top_failures": []  # Stubbed
-            },
-            "debug_info": {
-                "total_scenarios": len(all_scenarios),
-                "filtered": len(filtered),
-                "time_range": time_range,
-                "start": dt.isoformat_utc(start_date),
-                "end": dt.isoformat_utc(end_date),
-                "feature": feature,
-                "tag": tag
+            # Execute query to get matching scenarios
+            result = await session.execute(scenarios_query)
+            scenarios = result.scalars().all()
+
+            if not scenarios:
+                logger.info(f"No scenarios found matching criteria")
+                return {
+                    "status": "success",
+                    "trends": {"daily": [], "builds": [], "top_failures": []},
+                    "debug_info": {
+                        "total_scenarios": 0,
+                        "filtered": 0,
+                        "time_range": time_range,
+                        "start": dt.isoformat_utc(start_date),
+                        "end": dt.isoformat_utc(end_date),
+                        "feature": feature,
+                        "tag": tag,
+                        "query": query
+                    }
+                }
+
+            # Get scenario IDs for further filtering
+            db_scenario_ids = [s.id for s in scenarios]
+            scenario_count = len(db_scenario_ids)
+            logger.info(f"Found {scenario_count} scenarios before tag filtering")
+
+            # STEP 3: Apply tag filter if specified
+            if tag:
+                tag_query = select(DBScenarioTag.scenario_id).where(
+                    and_(
+                        DBScenarioTag.scenario_id.in_(db_scenario_ids),
+                        DBScenarioTag.tag == tag
+                    )
+                )
+                result = await session.execute(tag_query)
+                tagged_scenario_ids = [id[0] for id in result.all()]
+
+                # Filter scenarios to only those with the tag
+                scenarios = [s for s in scenarios if s.id in tagged_scenario_ids]
+                logger.info(f"Filtered to {len(scenarios)} scenarios after tag filter")
+
+            # STEP 4: Get feature info for each scenario
+            feature_ids = [s.feature_id for s in scenarios if s.feature_id]
+            feature_info = {}
+
+            if feature_ids:
+                feature_query = select(DBFeature).where(
+                    DBFeature.id.in_(feature_ids)
+                )
+                result = await session.execute(feature_query)
+                features = result.scalars().all()
+
+                for f in features:
+                    feature_info[str(f.id)] = f.name
+
+            # STEP 5: Group scenarios by day for trend analysis
+            scenario_data = []
+
+            # Get test run timestamps to associate with scenarios
+            test_run_dates = {str(tr.id): tr.created_at for tr in test_runs}
+
+            for scenario in scenarios:
+                test_run_id = str(scenario.test_run_id)
+
+                if test_run_id in test_run_dates:
+                    timestamp = test_run_dates[test_run_id]
+                    feature_name = feature_info.get(str(scenario.feature_id), "Unknown")
+
+                    scenario_data.append({
+                        "id": str(scenario.id),
+                        "name": scenario.name,
+                        "status": str(scenario.status),
+                        "timestamp": timestamp,
+                        "feature": feature_name,
+                        "test_run_id": test_run_id
+                    })
+
+            # Rest of the implementation remains the same...
+
+            # STEP 6: Generate daily trend data
+            daily = {}
+            for scenario in scenario_data:
+                ts = scenario["timestamp"]
+                date_key = ts.strftime("%Y-%m-%d")
+                display = ts.strftime("%b %-d")
+
+                entry = daily.setdefault(date_key, {
+                    "date": display,
+                    "total_scenarios": 0,
+                    "passed_scenarios": 0,
+                    "failed_scenarios": 0,
+                    "pass_rate": 0.0
+                })
+
+                entry["total_scenarios"] += 1
+
+                status = scenario["status"]
+                if "PASSED" in status:
+                    entry["passed_scenarios"] += 1
+                elif "FAILED" in status:
+                    entry["failed_scenarios"] += 1
+
+            # Calculate pass rates
+            for entry in daily.values():
+                total = entry["total_scenarios"]
+                passed = entry["passed_scenarios"]
+                if total > 0:
+                    entry["pass_rate"] = round(passed / total, 3)
+
+            daily_trends = sorted(daily.values(), key=lambda x: x["date"])
+
+            # STEP 7: Generate failure data
+            failure_counts = {}
+            for scenario in scenario_data:
+                if "FAILED" not in scenario["status"]:
+                    continue
+
+                name = scenario["name"]
+                feature = scenario["feature"]
+                key = f"{feature}|{name}"
+
+                if key not in failure_counts:
+                    failure_counts[key] = {
+                        "name": name,
+                        "feature": feature,
+                        "fail_count": 0,
+                        "id": scenario["id"],
+                        "last_failure": None
+                    }
+
+                failure_counts[key]["fail_count"] += 1
+
+                # Track the most recent failure
+                if not failure_counts[key]["last_failure"] or scenario["timestamp"] > failure_counts[key][
+                    "last_failure"]:
+                    failure_counts[key]["last_failure"] = scenario["timestamp"]
+
+            # Sort and get top failures
+            top_failures = sorted(
+                failure_counts.values(),
+                key=lambda x: x["fail_count"],
+                reverse=True
+            )[:5]  # Top 5 failures
+
+            # Format timestamps
+            for failure in top_failures:
+                if failure["last_failure"]:
+                    failure["last_failure"] = dt.isoformat_utc(failure["last_failure"])
+
+            return {
+                "status": "success",
+                "trends": {
+                    "daily": daily_trends,
+                    "builds": [],  # You can implement this separately
+                    "top_failures": top_failures
+                },
+                "debug_info": {
+                    "total_scenarios": scenario_count,
+                    "filtered": len(scenarios),
+                    "time_range": time_range,
+                    "start": dt.isoformat_utc(start_date),
+                    "end": dt.isoformat_utc(end_date),
+                    "feature": feature,
+                    "tag": tag,
+                    "query": query
+                }
             }
-        }
 
     except Exception as e:
         logger.error(f"Error retrieving trends: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve trends: {str(e)}")
+
+
+@router.post("/search", response_model=Dict[str, Any])
+async def semantic_search(
+        query: str,
+        filters: Optional[Dict[str, Any]] = None,
+        orchestrator: ServiceOrchestrator = Depends(get_orchestrator_service)
+):
+    """
+    Perform a semantic search against your test data and return comprehensive information.
+    This endpoint supports RAG use cases where you want to query and analyze test data
+    using natural language.
+    """
+    try:
+        # Generate embedding for the query
+        query_embedding = await orchestrator.llm.embed_text(query)
+
+        # Set up vector DB search
+        client = orchestrator.vector_db.client
+        collection = orchestrator.vector_db.cucumber_collection
+        from qdrant_client.http import models as qdrant_models
+
+        # Build filter based on provided filters
+        vector_filter = qdrant_models.Filter(must=[])
+
+        if filters:
+            # Add type filter if specified
+            if "type" in filters:
+                vector_filter.must.append(
+                    qdrant_models.FieldCondition(
+                        key="type",
+                        match=qdrant_models.MatchValue(value=filters["type"])
+                    )
+                )
+
+            # Add date range if specified
+            if "start_date" in filters and "end_date" in filters:
+                # Implementation depends on how dates are stored in vector DB
+                pass
+
+            # Other filters as needed
+
+        # Perform vector search
+        search_results = client.search(
+            collection_name=collection,
+            query_vector=query_embedding,
+            query_filter=vector_filter,
+            limit=20
+        )
+
+        # Collect relevant IDs
+        scenario_ids = []
+        test_run_ids = []
+        for result in search_results:
+            payload = result.payload
+            result_type = payload.get("type")
+
+            if result_type == "scenario":
+                scenario_ids.append(payload.get("id"))
+            elif result_type == "report":
+                test_run_ids.append(payload.get("id"))
+
+        # Get detailed information from PostgreSQL
+        async with orchestrator.pg_service.session() as session:
+            from app.models.database import (
+                TestRun as DBTestRun,
+                Scenario as DBScenario,
+                Feature as DBFeature,
+                ScenarioTag as DBScenarioTag,
+                Step as DBStep
+            )
+            from sqlalchemy import select
+
+            # Get scenarios
+            scenarios_data = []
+            if scenario_ids:
+                scenario_query = select(DBScenario).where(
+                    DBScenario.id.in_([UUID(id) for id in scenario_ids if id])
+                )
+                result = await session.execute(scenario_query)
+                scenarios = result.scalars().all()
+
+                # Get related features
+                feature_ids = [s.feature_id for s in scenarios if s.feature_id]
+                feature_map = {}
+
+                if feature_ids:
+                    features_query = select(DBFeature).where(
+                        DBFeature.id.in_(feature_ids)
+                    )
+                    result = await session.execute(features_query)
+                    features = result.scalars().all()
+
+                    for f in features:
+                        feature_map[f.id] = {
+                            "id": str(f.id),
+                            "name": f.name,
+                            "description": f.description,
+                            "tags": f.tags
+                        }
+
+                # Get tags for scenarios
+                scenario_tag_map = {}
+                if scenarios:
+                    scenario_ids_for_tags = [s.id for s in scenarios]
+                    tags_query = select(DBScenarioTag).where(
+                        DBScenarioTag.scenario_id.in_(scenario_ids_for_tags)
+                    )
+                    result = await session.execute(tags_query)
+                    tags = result.scalars().all()
+
+                    for tag in tags:
+                        if tag.scenario_id not in scenario_tag_map:
+                            scenario_tag_map[tag.scenario_id] = []
+                        scenario_tag_map[tag.scenario_id].append(tag.tag)
+
+                # Get steps for scenarios
+                steps_query = select(DBStep).where(
+                    DBStep.scenario_id.in_([s.id for s in scenarios])
+                )
+                result = await session.execute(steps_query)
+                steps = result.scalars().all()
+
+                # Group steps by scenario_id
+                steps_by_scenario = {}
+                for step in steps:
+                    if step.scenario_id not in steps_by_scenario:
+                        steps_by_scenario[step.scenario_id] = []
+                    steps_by_scenario[step.scenario_id].append({
+                        "id": str(step.id),
+                        "name": step.name,
+                        "keyword": step.keyword,
+                        "status": str(step.status),
+                        "duration": step.duration,
+                        "error_message": step.error_message
+                    })
+
+                # Build comprehensive scenario data
+                for scenario in scenarios:
+                    scenario_data = {
+                        "id": str(scenario.id),
+                        "name": scenario.name,
+                        "description": scenario.description,
+                        "status": str(scenario.status),
+                        "duration": scenario.duration,
+                        "feature": feature_map.get(scenario.feature_id, {"name": "Unknown"}),
+                        "tags": scenario_tag_map.get(scenario.id, []),
+                        "steps": steps_by_scenario.get(scenario.id, []),
+                        "test_run_id": str(scenario.test_run_id) if scenario.test_run_id else None
+                    }
+                    scenarios_data.append(scenario_data)
+
+            # Get test runs
+            test_runs_data = []
+            if test_run_ids:
+                test_run_query = select(DBTestRun).where(
+                    DBTestRun.id.in_([UUID(id) for id in test_run_ids if id])
+                )
+                result = await session.execute(test_run_query)
+                test_runs = result.scalars().all()
+
+                for test_run in test_runs:
+                    test_run_data = {
+                        "id": str(test_run.id),
+                        "name": test_run.name,
+                        "status": str(test_run.status),
+                        "environment": test_run.environment,
+                        "branch": test_run.branch,
+                        "commit_hash": test_run.commit_hash,
+                        "created_at": dt.isoformat_utc(test_run.created_at),
+                        "total_tests": test_run.total_tests,
+                        "passed_tests": test_run.passed_tests,
+                        "failed_tests": test_run.failed_tests,
+                        "skipped_tests": test_run.skipped_tests,
+                        "success_rate": test_run.success_rate
+                    }
+                    test_runs_data.append(test_run_data)
+
+        # Return comprehensive results
+        return {
+            "status": "success",
+            "query": query,
+            "results": {
+                "scenarios": scenarios_data,
+                "test_runs": test_runs_data
+            },
+            "meta": {
+                "total_results": len(scenarios_data) + len(test_runs_data),
+                "filters_applied": filters
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error performing semantic search: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
 
 
 @router.get("/trends/pass-rate", response_model=Dict[str, Any])
