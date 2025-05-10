@@ -6,7 +6,7 @@ from app.api.routes import(
     processor,
     # analysis,
     # test_results,
-    # failures,
+    failures,
     trends,
     health,
     # query,
@@ -23,18 +23,19 @@ from app.api.routes import(
 api_router = APIRouter()
 
 # Include all route modules
-api_router.include_router(processor.router)
-# api_router.include_router(query.router)
-api_router.include_router(stats.router)
-# api_router.include_router(test_results.router)
 api_router.include_router(health.router)
-api_router.include_router(trends.router)
-# api_router.include_router(failures.router)
-# api_router.include_router(analysis.router)
 api_router.include_router(notification.router)
+api_router.include_router(processor.router)
+api_router.include_router(stats.router)
+api_router.include_router(results.router)
+api_router.include_router(trends.router)
+api_router.include_router(failures.router)
+
+# api_router.include_router(test_results.router)
+# api_router.include_router(analysis.router)
 # api_router.include_router(reporting.router)
 # api_router.include_router(analytics.router)
-api_router.include_router(results.router)
+# api_router.include_router(query.router)
 
 # Phase 2 routes
 # api_router.include_router(webhooks.router)
