@@ -1,0 +1,170 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '16.x'
+  AZURE_WEBAPP_NAME: friday-metrics-bot    # set this to your application's name
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linting
+        run: npm run lint
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-output
+          path: |
+            lib/
+            package.json
+            package-lock.json
+            .env.example
+            public/
+            node_modules/
+          retention-days: 1
+
+  deploy:
+    name: Deploy to Azure
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-output
+
+      - name: 'Login to Azure'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 'Deploy to Azure Web App'
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: 'production'
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - name: 'Configure Azure App Settings'
+        uses: azure/app-service-settings@v1
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-settings-json: |
+            [
+              {
+                "name": "MicrosoftAppId",
+                "value": "${{ secrets.BOT_APP_ID }}",
+                "slotSetting": false
+              },
+              {
+                "name": "MicrosoftAppPassword",
+                "value": "${{ secrets.BOT_APP_PASSWORD }}",
+                "slotSetting": false
+              },
+              {
+                "name": "FRIDAY_API_URL",
+                "value": "${{ secrets.FRIDAY_API_URL }}",
+                "slotSetting": false
+              },
+              {
+                "name": "FRIDAY_API_KEY",
+                "value": "${{ secrets.FRIDAY_API_KEY }}",
+                "slotSetting": false
+              },
+              {
+                "name": "AZURE_DEVOPS_ORG_URL",
+                "value": "${{ secrets.AZURE_DEVOPS_ORG_URL }}",
+                "slotSetting": false
+              },
+              {
+                "name": "AZURE_DEVOPS_PROJECT",
+                "value": "${{ secrets.AZURE_DEVOPS_PROJECT }}",
+                "slotSetting": false
+              },
+              {
+                "name": "AZURE_DEVOPS_PAT",
+                "value": "${{ secrets.AZURE_DEVOPS_PAT }}",
+                "slotSetting": false
+              },
+              {
+                "name": "NODE_ENV",
+                "value": "production",
+                "slotSetting": false
+              },
+              {
+                "name": "LOG_LEVEL",
+                "value": "info",
+                "slotSetting": false
+              },
+              {
+                "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                "value": "${{ env.NODE_VERSION }}",
+                "slotSetting": false
+              }
+            ]
+
+      - name: 'Test Bot Endpoint'
+        run: |
+          # Give the app some time to start
+          sleep 30
+          curl -s "https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/health" | grep -q "healthy" || exit 1
+
+      - name: Azure logout
+        run: |
+          az logout
+
+  infrastructure:
+    name: Update Infrastructure
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 'Login to Azure'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 'Deploy Azure Infrastructure'
+        uses: azure/arm-deploy@v1
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          template: ./infra/main.bicep
+          parameters: ./infra/parameters.json botId=${{ secrets.BOT_APP_ID }} botPassword=${{ secrets.BOT_APP_PASSWORD }}
+
+      - name: Azure logout
+        run: |
+          az logout

@@ -1,0 +1,64 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "size": "Large",
+      "weight": "Bolder",
+      "text": "${title}",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "size": "Medium",
+      "weight": "Bolder",
+      "text": "${subtitle}",
+      "wrap": true,
+      "spacing": "Small"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${text}",
+      "wrap": true,
+      "spacing": "Medium"
+    },
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "${commands}",
+          "wrap": true
+        }
+      ],
+      "style": "emphasis",
+      "spacing": "Medium",
+      "bleed": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Show Recent Metrics",
+      "data": {
+        "action": "showRecentMetrics"
+      }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Show Historical Trends",
+      "data": {
+        "action": "showTrendCharts"
+      }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Help",
+      "data": {
+        "action": "help"
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus"
+    },
+    "prefix": {
+      "value": "fridaybot"
+    },
+    "appServicePlanSku": {
+      "value": "B1"
+    },
+    "fridayApiUrl": {
+      "value": "https://api.friday-service.example.com/v1"
+    },
+    "azureDevOpsOrgUrl": {
+      "value": "https://dev.azure.com/your-organization"
+    },
+    "azureDevOpsProject": {
+      "value": "your-project"
+    }
+  }
+}

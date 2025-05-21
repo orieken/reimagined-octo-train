@@ -1,0 +1,220 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "size": "Large",
+      "weight": "Bolder",
+      "text": "${title}",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "size": "Medium",
+      "text": "${subtitle}",
+      "wrap": true,
+      "spacing": "Small"
+    },
+    {
+      "type": "ColumnSet",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            {
+              "type": "FactSet",
+              "facts": [
+                {
+                  "title": "Total Tests",
+                  "value": "${totalTests}"
+                },
+                {
+                  "title": "Duration",
+                  "value": "${duration}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "auto",
+          "items": [
+            {
+              "type": "Container",
+              "style": "${statusColor}",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Pass Rate",
+                  "weight": "Bolder",
+                  "horizontalAlignment": "Center"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${passRate}%",
+                  "size": "ExtraLarge",
+                  "weight": "Bolder",
+                  "horizontalAlignment": "Center"
+                }
+              ],
+              "bleed": true,
+              "padding": "Medium"
+            }
+          ]
+        }
+      ],
+      "spacing": "Medium"
+    },
+    {
+      "type": "ColumnSet",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "1",
+          "items": [
+            {
+              "type": "Container",
+              "style": "good",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Passed",
+                  "horizontalAlignment": "Center",
+                  "weight": "Bolder"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${passedTests}",
+                  "horizontalAlignment": "Center",
+                  "size": "Large"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "1",
+          "items": [
+            {
+              "type": "Container",
+              "style": "attention",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Failed",
+                  "horizontalAlignment": "Center",
+                  "weight": "Bolder"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${failedTests}",
+                  "horizontalAlignment": "Center",
+                  "size": "Large"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "1",
+          "items": [
+            {
+              "type": "Container",
+              "style": "warning",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Skipped",
+                  "horizontalAlignment": "Center",
+                  "weight": "Bolder"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${skippedTests}",
+                  "horizontalAlignment": "Center",
+                  "size": "Large"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "spacing": "Medium"
+    },
+    {
+      "$when": "${hasAzureDevOps}",
+      "type": "Container",
+      "style": "emphasis",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Azure DevOps Build Information",
+          "weight": "Bolder",
+          "wrap": true
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Status",
+              "value": "${buildStatus}"
+            },
+            {
+              "title": "Result",
+              "value": "${buildResult}"
+            },
+            {
+              "title": "Started",
+              "value": "${buildStartTime}"
+            },
+            {
+              "title": "Finished",
+              "value": "${buildFinishTime}"
+            },
+            {
+              "title": "Requested By",
+              "value": "${buildRequestedBy}"
+            }
+          ]
+        }
+      ],
+      "spacing": "Medium"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "View Build Details",
+      "url": "${buildUrl}"
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Show Failed Tests",
+      "data": {
+        "action": "showFailedTests",
+        "projectId": "${projectId}",
+        "buildNumber": "${buildNumber}"
+      }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Show Trend Charts",
+      "data": {
+        "action": "showTrendCharts",
+        "projectId": "${projectId}"
+      }
+    },
+    {
+      "$when": "${hasAzureDevOps}",
+      "type": "Action.OpenUrl",
+      "title": "View in Azure DevOps",
+      "url": "https://dev.azure.com/organization/project/_build/results?buildId=${azureDevOpsBuildId}"
+    }
+  ]
+}
