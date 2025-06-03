@@ -1,0 +1,24 @@
+#!/bin/bash
+
+XVFB_DISPLAY=${DISPLAY:-:99}
+XVFB_COMMAND="Xvfb $XVFB_DISPLAY -screen 0 1280x1024x24"
+
+# Start Xvfb
+$XVFB_COMMAND &
+XVFB_PID=$!
+sleep 0.5
+
+# Ensure Xvfb started
+if ! kill -0 $XVFB_PID 2>/dev/null; then
+  echo "❌ Failed to start Xvfb"
+  exit 1
+fi
+
+# Cleanup
+cleanup() {
+  kill $XVFB_PID
+}
+trap cleanup EXIT
+
+# Run the command under Xvfb
+DISPLAY=$XVFB_DISPLAY exec "$@"

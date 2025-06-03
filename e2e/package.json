@@ -1,0 +1,70 @@
+{
+  "name": "playwright-cucumber-starter",
+  "version": "0.0.2",
+  "description": "template project for playwright with cucumber",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "lint": "eslint . --fix",
+    "cucumber": "node_modules/.bin/cucumber-js ",
+    "cu": "npm run cucumber",
+    "cu:focus": "npm run cucumber -- --tags @focus",
+    "prettier": "prettier 'features/**/*.ts'",
+    "prettier:fix": "prettier --write 'features/**/*.ts'",
+    "site:generate": "ts-node lib/generator.ts",
+    "test:cmd:xvfb": "cd cmd/xvfb-run && go test -coverprofile=coverage.out && go tool cover -func=coverage.out"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orieken/playwright-cucumber-starter.git"
+  },
+  "keywords": [
+    "playwright",
+    "cucumber",
+    "typescript"
+  ],
+  "author": "Oscar Rieken <oriekenjr@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/orieken/playwright-cucumber-starter/issues"
+  },
+  "homepage": "https://github.com/orieken/playwright-cucumber-starter#readme",
+  "devDependencies": {
+    "@cucumber/cucumber": "11.1.0",
+    "@cucumber/pretty-formatter": "^1.0.1",
+    "@eslint/js": "^9.16.0",
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.17.0",
+    "@typescript-eslint/parser": "^8.17.0",
+    "eslint": "^9.16.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "globals": "^15.13.0",
+    "lint-staged": "^15.2.10",
+    "playwright": "^1.49.0",
+    "prettier": "^3.4.2",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.17.0",
+    "vitest": "^3.1.4"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write ."
+    ],
+    "*.js": "eslint --cache --fix"
+  },
+  "prettier": {
+    "semi": true,
+    "trailingComma": "all",
+    "singleQuote": true,
+    "printWidth": 120,
+    "tabWidth": 2,
+    "allowTemplateLiterals": true
+  }
+}
