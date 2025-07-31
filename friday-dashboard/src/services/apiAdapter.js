@@ -184,7 +184,7 @@ export const adaptFailureAnalysis = (apiResponse) => {
     const failureRate = feature.failure_rate || (total > 0 ? failedTests / total * 100 : 0);
 
     return {
-      feature: feature.name || 'Unknown',
+      feature: feature.feature || 'Unknown',
       failures: failedTests,
       tests: total,
       failureRate: Math.round(failureRate * 10) / 10

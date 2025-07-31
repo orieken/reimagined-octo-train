@@ -58,7 +58,7 @@ async def health_check(
     # Check LLM Service
     try:
         test_text = "health check"
-        test_embedding = await orchestrator.llm.generate_embedding(test_text)
+        test_embedding = await orchestrator.llm.embed_text(test_text)
 
         if test_embedding and len(test_embedding) > 0:
             health_status["services"]["llm"] = "ok"

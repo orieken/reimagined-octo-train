@@ -419,3 +419,120 @@ def healthcheck(c):
         """,
         pty=True
     )
+
+
+# Add these tasks to your existing task_modules/int.py file
+
+@task
+def populate_trends_simple(c, days=7):
+    """
+    Simple version: Create 2-3 test runs per day for the last week to test trends API.
+    """
+    import random
+    from datetime import datetime, timedelta
+
+    print(f"🚀 Populating simple trend data for last {days} days...")
+
+    for day_offset in range(days):
+        target_date = datetime.utcnow() - timedelta(days=day_offset)
+        runs_for_day = random.randint(2, 3)
+
+        print(f"📅 Day {day_offset + 1}/{days}: {target_date.strftime('%Y-%m-%d')} - {runs_for_day} runs")
+
+        for run_num in range(runs_for_day):
+            # Vary the time within the day
+            hour = random.randint(8, 20)  # Between 8 AM and 8 PM
+            minute = random.randint(0, 59)
+
+            # Adjust the timestamp in the payload
+            test_time = target_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+            # Vary failure rates for realism
+            failure_rate = random.uniform(0.1, 0.3)  # 10-30% failure rate
+
+            # Create payload based on your existing test-extended task
+            payload = {
+                "metadata": {
+                    "project": f"trends-demo-{day_offset}",
+                    "branch": random.choice(["main", "develop", "feature/trends"]),
+                    "commit": f"abc{random.randint(1000, 9999)}def",
+                    "environment": random.choice(["development", "staging", "production"]),
+                    "runner": f"ci-runner-{random.randint(1, 3):02d}",
+                    "timestamp": test_time.isoformat() + "Z",
+                    "test_run_id": f"trend-run-{target_date.strftime('%Y%m%d')}-{run_num + 1}"
+                },
+                "features": []
+            }
+
+            # Add 2-4 features per run
+            feature_names = ["Login Feature", "Dashboard", "User Management", "API Tests", "Payment Flow"]
+            selected_features = random.sample(feature_names, random.randint(2, 4))
+
+            for feature_name in selected_features:
+                scenarios = []
+                num_scenarios = random.randint(3, 6)
+
+                for i in range(num_scenarios):
+                    # Determine pass/fail
+                    will_fail = random.random() < failure_rate
+                    status = "failed" if will_fail else "passed"
+
+                    scenario = {
+                        "name": f"{feature_name} - Test Scenario {i + 1}",
+                        "description": f"Testing {feature_name.lower()} functionality",
+                        "type": "scenario",
+                        "tags": [
+                            {"name": "@regression", "line": 1},
+                            {"name": f"@{feature_name.lower().replace(' ', '_')}", "line": 1}
+                        ],
+                        "steps": [
+                            {
+                                "name": f"Setup {feature_name.lower()}",
+                                "keyword": "Given",
+                                "result": {"status": "passed", "duration": random.uniform(0.5, 1.5)}
+                            },
+                            {
+                                "name": f"Execute {feature_name.lower()} action",
+                                "keyword": "When",
+                                "result": {"status": status, "duration": random.uniform(1.0, 3.0)}
+                            },
+                            {
+                                "name": f"Verify {feature_name.lower()} result",
+                                "keyword": "Then",
+                                "result": {"status": status, "duration": random.uniform(0.2, 0.8)}
+                            }
+                        ]
+                    }
+
+                    scenarios.append(scenario)
+
+                payload["features"].append({
+                    "name": feature_name,
+                    "description": f"Testing {feature_name} functionality",
+                    "uri": f"features/{feature_name.lower().replace(' ', '_')}.feature",
+                    "tags": ["regression"],
+                    "elements": scenarios
+                })
+
+            # Send the payload
+            try:
+                c.run(
+                    f"""
+                    curl -s -X POST http://localhost:4000/api/v1/processor/cucumber \
+                    -H "Content-Type: application/json" \
+                    -d '{json.dumps(payload)}'
+                    """,
+                    hide=True
+                )
+                print(f"  ✅ Created run {run_num + 1}: {payload['metadata']['test_run_id']}")
+            except Exception as e:
+                print(f"  ❌ Failed: {e}")
+
+    print(f"🎉 Done! Created {sum(random.randint(2, 3) for _ in range(days))} test runs")
+    print("💡 Test your trends API: curl http://localhost:4000/api/v1/trends?time_range=week")
+
+
+@task
+def trends_quick(c):
+    """Quick 3-day trend data for testing"""
+    populate_trends_simple(c, days=3)
