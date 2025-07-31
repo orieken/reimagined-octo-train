@@ -28,9 +28,9 @@ class Settings(BaseSettings):
 
     # LLM settings
     OLLAMA_API_URL: str = Field(default="http://localhost:11434")
-    OLLAMA_MODEL: str = Field(default="llama3.3:latest")
+    OLLAMA_MODEL: str = Field(default="llama3:latest")
     OLLAMA_TIMEOUT: int = Field(default=60)
-    LLM_MODEL: str = "llama3.3:latest"
+    LLM_MODEL: str = "llama3:latest"
     LLM_TIMEOUT: int = 60
 
     # Vector DB settings

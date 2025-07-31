@@ -85,7 +85,7 @@ class AnalyticsService:
         """
         # Generate a simple query embedding
         query_text = "test case details"
-        query_embedding = await self.orchestrator.llm.generate_embedding(query_text)
+        query_embedding = await self.orchestrator.llm.embed_text(query_text)
 
         # Get test cases for each report
         report_test_cases = {}
@@ -315,7 +315,7 @@ class AnalyticsService:
         # Get failures to analyze
         if report_id:
             # Analyze specific report
-            query_embedding = await self.orchestrator.llm.generate_embedding("test case")
+            query_embedding = await self.orchestrator.llm.embed_text("test case")
 
             # Get failed test cases for this report
             test_cases = self.orchestrator.vector_db.search_test_cases(

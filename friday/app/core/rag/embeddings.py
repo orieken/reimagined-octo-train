@@ -55,7 +55,7 @@ class EmbeddingService:
         Returns:
             Text embedding
         """
-        vector = await self.llm_service.generate_embedding(chunk.text)
+        vector = await self.llm_service.embed_text(chunk.text)
 
         return TextEmbedding(
             id=str(uuid.uuid4()),

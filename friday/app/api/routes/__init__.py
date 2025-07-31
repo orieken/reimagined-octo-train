@@ -1,6 +1,7 @@
 """
 API routes for the Friday service
 """
+# /app/api/routes/__init__.py
 from fastapi import APIRouter
 from app.api.routes import(
     processor,
@@ -9,7 +10,7 @@ from app.api.routes import(
     failures,
     trends,
     health,
-    # query,
+    query,
     stats,
     notification,
     # reporting,
@@ -35,7 +36,7 @@ api_router.include_router(failures.router)
 # api_router.include_router(analysis.router)
 # api_router.include_router(reporting.router)
 # api_router.include_router(analytics.router)
-# api_router.include_router(query.router)
+api_router.include_router(query.router)
 
 # Phase 2 routes
 # api_router.include_router(webhooks.router)
